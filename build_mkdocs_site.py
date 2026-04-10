@@ -78,6 +78,9 @@ def _replace_local_company_links(text: str, prefix: str) -> str:
         relative = f"{prefix}{source.name}"
         pattern = re.compile(rf"\([A-Za-z]:\\[^)\r\n]*\\{re.escape(source.name)}\)")
         text = pattern.sub(f"({relative})", text)
+        text = text.replace(f'href="{source.name}"', f'href="{relative}"')
+        text = text.replace(f"({source.name})", f"({relative})")
+        text = text.replace(f"(./{source.name})", f"({relative})")
     return text
 
 

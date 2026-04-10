@@ -1,11 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
+import html
 from pathlib import Path
 
 import pandas as pd
-
-from dart_orders_timeseries import _default_output_path
 
 
 QUARTER_SPECS = [
@@ -36,7 +35,7 @@ def main() -> None:
     input_csv = Path(args.input_csv)
     output_md = Path(args.output_md)
 
-    df = pd.read_csv(input_csv, dtype={"corp_code": str, "stock_code": str})
+    df = pd.read_csv(input_csv, dtype={"corp_code": str, "stock_code": str}, encoding="utf-8-sig")
     for column in ["amount_eok", "change_eok", "change_pct", "yoy_change_eok", "yoy_change_pct"]:
         df[column] = pd.to_numeric(df[column], errors="coerce")
 
@@ -45,8 +44,8 @@ def main() -> None:
         "",
         f"- 기준 데이터: `{input_csv.as_posix()}`",
         "- 기준 범위: `2025년 1분기 ~ 2025년 4분기`",
-        "- 기업명 링크: 각 기업별 수주잔고 MD 파일로 연결",
-        "- 주의: 자동 추출 결과이므로 일부 극단값은 이상치 점검이 필요할 수 있음",
+        "- 기업명 링크: 각 기업별 수주잔고 MD 문서로 연결",
+        "- 주의: 자동 추출 결과이므로 극단값은 개별 기업 문서를 함께 확인하는 편이 안전합니다.",
         "",
     ]
 
@@ -57,9 +56,9 @@ def main() -> None:
         [
             "## 메모",
             "",
-            "- 이 순위는 자동 추출된 시계열 기준의 단순 정렬 결과임",
-            "- 극단적인 증가율이나 금액은 분모가 매우 작은 경우, 단위 인식 문제, 합계 선택 문제 때문에 과대하게 보일 수 있음",
-            "- 실제 해석 전에는 `수주잔고_이상치점검표`와 개별 기업 MD를 같이 확인하는 것이 안전함",
+            "- 순위는 자동 추출된 시계열 기준으로 계산합니다.",
+            "- 증감률은 분모가 매우 작은 경우 과도하게 커질 수 있습니다.",
+            "- 실제 해석 전에는 개별 기업 문서와 원문 공시를 함께 확인하는 편이 안전합니다.",
             "",
         ]
     )
@@ -85,10 +84,7 @@ def _build_quarter_section(
     details_tag = "<details open>" if open_by_default else "<details>"
     lines = [details_tag, f"<summary><strong>{label}</strong></summary>", ""]
     if quarter_df.empty:
-        lines.append("- 데이터 없음")
-        lines.append("")
-        lines.append("</details>")
-        lines.append("")
+        lines.extend(["<p>데이터 없음</p>", "", "</details>", ""])
         return lines
 
     lines.extend(
@@ -141,8 +137,7 @@ def _build_quarter_section(
             lambda row: _fmt_pct(row["yoy_change_pct"]),
         )
     )
-    lines.append("</details>")
-    lines.append("")
+    lines.extend(["</details>", ""])
     return lines
 
 
@@ -154,20 +149,38 @@ def _build_table(
     value2_label: str,
     value2_fn,
 ) -> list[str]:
-    lines = [f"### {title}", ""]
-    lines.append(f"| 순위 | 기업명 | 수주잔고(억원) | {value1_label} | {value2_label} |")
-    lines.append("| --- | --- | ---: | ---: | ---: |")
+    lines = [f"### {title}", "", "<table>", "<thead>"]
+    lines.append(
+        "<tr><th>순위</th><th>기업명</th><th>수주잔고(억원)</th><th>{}</th><th>{}</th></tr>".format(
+            html.escape(value1_label), html.escape(value2_label)
+        )
+    )
+    lines.extend(["</thead>", "<tbody>"])
     for index, (_, row) in enumerate(table_df.iterrows(), start=1):
         lines.append(
-            f"| {index} | {_company_link(row)} | {_fmt_num(row['amount_eok'])} | {value1_fn(row)} | {value2_fn(row)} |"
+            "<tr>"
+            f"<td>{index}</td>"
+            f"<td>{_company_link(row)}</td>"
+            f"<td>{html.escape(_fmt_num(row['amount_eok']))}</td>"
+            f"<td>{html.escape(value1_fn(row))}</td>"
+            f"<td>{html.escape(value2_fn(row))}</td>"
+            "</tr>"
         )
-    lines.append("")
+    lines.extend(["</tbody>", "</table>", ""])
     return lines
 
 
+def _company_filename(company_name: str, stock_code: str | None) -> str:
+    sanitized_name = "".join(char if char.isalnum() else "_" for char in company_name).strip("_")
+    code_text = "".join(char for char in str(stock_code or "-") if char.isalnum()) or "-"
+    if code_text.isdigit():
+        code_text = code_text.zfill(6)
+    return f"{sanitized_name}_수주잔고({code_text}).md"
+
+
 def _company_link(row: pd.Series) -> str:
-    md_path = Path("D:/GPT Codex") / _default_output_path(str(row["corp_name"]), str(row["stock_code"]).zfill(6))
-    return f"[{row['corp_name']}]({md_path})"
+    file_name = _company_filename(str(row["corp_name"]), row["stock_code"])
+    return f'<a href="{html.escape(file_name)}">{html.escape(str(row["corp_name"]))}</a>'
 
 
 def _fmt_num(value: float | int | None) -> str:
@@ -179,7 +192,7 @@ def _fmt_num(value: float | int | None) -> str:
 def _fmt_pct(value: float | int | None) -> str:
     if pd.isna(value):
         return "-"
-    return f"{float(value):,.2f}%"
+    return f"{float(value):,.2f}%".rstrip("0").rstrip(".")
 
 
 if __name__ == "__main__":
