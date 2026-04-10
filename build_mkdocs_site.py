@@ -75,12 +75,13 @@ def _write_companies_index() -> None:
 
 def _replace_local_company_links(text: str, prefix: str) -> str:
     for source in OUTPUTS_DIR.glob("*_수주잔고(*).md"):
-        relative = f"{prefix}{source.name}"
+        relative_md = f"{prefix}{source.name}"
+        relative_page = f"{prefix}{source.stem}/"
         pattern = re.compile(rf"\([A-Za-z]:\\[^)\r\n]*\\{re.escape(source.name)}\)")
-        text = pattern.sub(f"({relative})", text)
-        text = text.replace(f'href="{source.name}"', f'href="{relative}"')
-        text = text.replace(f"({source.name})", f"({relative})")
-        text = text.replace(f"(./{source.name})", f"({relative})")
+        text = pattern.sub(f"({relative_md})", text)
+        text = text.replace(f'href="{source.name}"', f'href="{relative_page}"')
+        text = text.replace(f"({source.name})", f"({relative_md})")
+        text = text.replace(f"(./{source.name})", f"({relative_md})")
     return text
 
 
