@@ -762,23 +762,31 @@ def _decode_bytes(raw_bytes: bytes) -> str:
 
 def _extract_from_tables(content: str) -> list[OrderBacklogMatch]:
     matches: list[OrderBacklogMatch] = []
-    tables = _read_html_tables(content)
-    if not tables:
-        return matches
-
     current_unit: str | None = None
-    for table in tables:
+    for table_match in re.finditer(r"(<table\b.*?</table>)", content, flags=re.DOTALL | re.IGNORECASE):
+        table_block = table_match.group(1)
+        tables = _read_html_tables(table_block)
+        if not tables:
+            continue
+        table = tables[0]
         normalized_rows = table.fillna("").astype(str).apply(lambda column: column.map(_compact_text)).values.tolist()
         if not normalized_rows:
             continue
         table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
-        explicit_unit = _detect_unit(table_text, loose=False)
+        explicit_unit = _detect_nearest_unit(table_text, loose=False)
         if explicit_unit:
             current_unit = explicit_unit
         backlog_columns = _find_backlog_columns(normalized_rows)
         if not backlog_columns:
             continue
-        unit = explicit_unit or current_unit or _detect_document_unit(content)
+        context_start = max(table_match.start() - 3000, 0)
+        context_end = min(table_match.end() + 1000, len(content))
+        unit = (
+            explicit_unit
+            or _detect_nearest_unit(content[context_start:context_end], loose=False)
+            or current_unit
+            or _detect_document_unit(content)
+        )
 
         header_rows = _estimate_header_row_count(normalized_rows)
         for row in normalized_rows[header_rows:]:
@@ -1103,7 +1111,7 @@ def _extract_from_xml_tables(content: str) -> list[OrderBacklogMatch]:
             continue
         normalized_rows = [[_compact_text(cell) for cell in row] for row in grid]
         table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
-        explicit_unit = _detect_unit(table_text, loose=False)
+        explicit_unit = _detect_nearest_unit(table_text, loose=False)
         if explicit_unit:
             current_unit = explicit_unit
         backlog_columns = _find_backlog_columns(normalized_rows)
@@ -1114,7 +1122,7 @@ def _extract_from_xml_tables(content: str) -> list[OrderBacklogMatch]:
         context_end = min(table_match.end() + 1000, len(content))
         unit = (
             explicit_unit
-            or _detect_unit(content[context_start:context_end], loose=False)
+            or _detect_nearest_unit(content[context_start:context_end], loose=False)
             or current_unit
             or _detect_document_unit(content)
         )
@@ -1317,8 +1325,12 @@ def _total_keyword_priority(text: str) -> int:
     return 3
 
 
+def _unit_patterns() -> list[str]:
+    return ["십억원", "억원", "천만원", "백만원", "천원", "원"]
+
+
 def _detect_unit(text: str, loose: bool = False) -> str | None:
-    unit_patterns = ["십억원", "억원", "천만원", "백만원", "천원", "원"]
+    unit_patterns = _unit_patterns()
     for unit in unit_patterns:
         if re.search(rf"\(?\s*단위\s*[:：]\s*{re.escape(unit)}\s*\)?", text):
             return unit
@@ -1329,8 +1341,28 @@ def _detect_unit(text: str, loose: bool = False) -> str | None:
     return None
 
 
+def _detect_nearest_unit(text: str, loose: bool = False) -> str | None:
+    unit_patterns = _unit_patterns()
+    matches: list[tuple[int, str]] = []
+    for unit in unit_patterns:
+        for match in re.finditer(rf"\(?\s*단위\s*[:：]\s*{re.escape(unit)}\s*\)?", text):
+            matches.append((match.start(), unit))
+    if matches:
+        matches.sort(key=lambda item: item[0])
+        return matches[-1][1]
+    if loose:
+        for unit in unit_patterns:
+            index = text.rfind(unit)
+            if index >= 0:
+                matches.append((index, unit))
+        if matches:
+            matches.sort(key=lambda item: item[0])
+            return matches[-1][1]
+    return None
+
+
 def _detect_document_unit(content: str) -> str | None:
-    return _detect_unit(content, loose=False) or _detect_unit(_html_to_text(content), loose=True)
+    return _detect_nearest_unit(content, loose=False) or _detect_nearest_unit(_html_to_text(content), loose=True)
 
 
 def _contains_foreign_currency_marker(text: str) -> bool:
