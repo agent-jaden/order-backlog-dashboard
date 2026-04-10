@@ -1,10 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import re
-import shutil
 from pathlib import Path
-
-import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parent
@@ -20,7 +17,6 @@ def main() -> None:
     _reset_docs_dir()
     _write_index_page()
     _export_dashboard()
-    _export_anomaly_check()
     _export_company_pages()
     _write_companies_index()
     print(f"MkDocs docs exported to: {DOCS_DIR}")
@@ -36,7 +32,6 @@ def _write_index_page() -> None:
             "# 수주잔고 리포트",
             "",
             "- [대시보드](dashboard.md)",
-            "- [이상치 점검표](anomaly-check.md)",
             "- [기업별 문서 목록](companies/index.md)",
             "",
             "이 사이트는 DART 기반 수주잔고 시계열과 대시보드를 게시하기 위한 정적 문서 사이트입니다.",
@@ -51,13 +46,6 @@ def _export_dashboard() -> None:
     target = DOCS_DIR / "dashboard.md"
     text = source.read_text(encoding="utf-8-sig")
     text = _replace_local_company_links(text, prefix="companies/")
-    target.write_text(text, encoding="utf-8")
-
-
-def _export_anomaly_check() -> None:
-    source = OUTPUTS_DIR / "수주잔고_이상치점검표.md"
-    target = DOCS_DIR / "anomaly-check.md"
-    text = source.read_text(encoding="utf-8-sig")
     target.write_text(text, encoding="utf-8")
 
 
