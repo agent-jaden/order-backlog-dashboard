@@ -45,7 +45,7 @@ def _export_dashboard() -> None:
     source = OUTPUTS_DIR / "수주잔고_대시보드.md"
     target = DOCS_DIR / "dashboard.md"
     text = source.read_text(encoding="utf-8-sig")
-    text = _replace_local_company_links(text, prefix="companies/")
+    text = _replace_local_company_links(text, prefix="../companies/")
     target.write_text(text, encoding="utf-8")
 
 
