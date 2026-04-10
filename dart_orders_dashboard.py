@@ -50,8 +50,8 @@ def main() -> None:
         "",
     ]
 
-    for period, report_kind, label in QUARTER_SPECS:
-        lines.extend(_build_quarter_section(df, period, report_kind, label))
+    for index, (period, report_kind, label) in enumerate(QUARTER_SPECS):
+        lines.extend(_build_quarter_section(df, period, report_kind, label, open_by_default=index == 0))
 
     lines.extend(
         [
@@ -69,16 +69,25 @@ def main() -> None:
     print(f"Dashboard saved to: {output_md}")
 
 
-def _build_quarter_section(df: pd.DataFrame, period: str, report_kind: str, label: str) -> list[str]:
+def _build_quarter_section(
+    df: pd.DataFrame,
+    period: str,
+    report_kind: str,
+    label: str,
+    open_by_default: bool = False,
+) -> list[str]:
     quarter_df = df[
         df["report_name"].astype(str).str.contains(report_kind, na=False, regex=False)
         & df["report_name"].astype(str).str.contains(period, na=False, regex=False)
     ].copy()
     quarter_df = quarter_df.sort_values(["corp_name", "stock_code", "filing_date"]).drop_duplicates(["corp_code"], keep="last")
 
-    lines = [f"## {label}", ""]
+    details_tag = "<details open>" if open_by_default else "<details>"
+    lines = [details_tag, f"<summary><strong>{label}</strong></summary>", ""]
     if quarter_df.empty:
         lines.append("- 데이터 없음")
+        lines.append("")
+        lines.append("</details>")
         lines.append("")
         return lines
 
@@ -132,6 +141,8 @@ def _build_quarter_section(df: pd.DataFrame, period: str, report_kind: str, labe
             lambda row: _fmt_pct(row["yoy_change_pct"]),
         )
     )
+    lines.append("</details>")
+    lines.append("")
     return lines
 
 
