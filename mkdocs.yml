@@ -1,0 +1,25 @@
+site_name: 수주잔고 리포트
+site_description: DART 기반 수주잔고 대시보드와 기업별 시계열 문서
+site_url: "https://agent-jaden.github.io/order-backlog-dashboard/"
+repo_url: "https://github.com/agent-jaden/order-backlog-dashboard"
+theme:
+  name: material
+  language: ko
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+plugins:
+  - search
+docs_dir: docs
+site_dir: site
+nav:
+  - 홈: index.md
+  - 대시보드: dashboard.md
+  - 이상치 점검표: anomaly-check.md
+  - 기업별 문서 목록: companies/index.md
