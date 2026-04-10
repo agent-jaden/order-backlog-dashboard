@@ -18,6 +18,10 @@ plugins:
   - search
 docs_dir: docs
 site_dir: site
+extra_javascript:
+  - javascripts/giscus.js
+extra_css:
+  - stylesheets/giscus.css
 nav:
   - 홈: index.md
   - 대시보드: dashboard.md

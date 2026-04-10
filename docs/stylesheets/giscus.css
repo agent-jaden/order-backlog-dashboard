@@ -1,0 +1,17 @@
+.giscus-comments {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.giscus-comments h2 {
+  margin-bottom: 0.75rem;
+}
+
+.giscus-comments--inactive {
+  color: var(--md-default-fg-color--light);
+}
+
+.giscus-comments code {
+  white-space: nowrap;
+}
