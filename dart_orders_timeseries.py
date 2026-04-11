@@ -110,7 +110,6 @@ def build_company_timeseries(
     total_df, summary_notes = _build_timeseries_total_summary(match_df)
     if total_df.empty:
         raise ValueError("No order backlog totals could be extracted from the requested filings.")
-
     series_df, notes = _build_series_frame(total_df)
     notes = summary_notes + notes
     markdown = _timeseries_to_markdown(
@@ -140,6 +139,7 @@ def _build_timeseries_total_summary(match_df: pd.DataFrame) -> tuple[pd.DataFram
     total_df = build_total_summary(match_df)
     if total_df.empty:
         return total_df, []
+    return total_df, []
 
     candidate_df = _build_total_candidates(match_df)
     if candidate_df.empty:
@@ -171,6 +171,8 @@ def _build_timeseries_total_summary(match_df: pd.DataFrame) -> tuple[pd.DataFram
     corrected_df = pd.DataFrame(corrected_rows)
     corrected_df = corrected_df[["filing_date", "report_name", "report_period", "amount_display", "amount_krw", "amount_eok"]]
     return corrected_df, notes
+
+
 
 
 def _build_total_candidates(df: pd.DataFrame) -> pd.DataFrame:

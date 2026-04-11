@@ -382,11 +382,11 @@ class DartClient:
 
 def extract_order_backlog_matches(filing: DartFiling, files: dict[str, str]) -> list[OrderBacklogMatch]:
     matches: list[OrderBacklogMatch] = []
-    seen_keys: set[tuple[str, str, str | None]] = set()
+    seen_keys: set[tuple[str, str, str | None, str | None]] = set()
 
     for file_name, content in files.items():
         for section_match in _extract_from_sales_and_orders_section(content):
-            key = (file_name, section_match.raw_value or "", section_match.matched_text)
+            key = (file_name, section_match.raw_value or "", section_match.matched_text, section_match.unit)
             if key in seen_keys:
                 continue
             seen_keys.add(key)
@@ -406,7 +406,7 @@ def extract_order_backlog_matches(filing: DartFiling, files: dict[str, str]) -> 
             )
 
         for xml_table_match in _extract_from_xml_tables(content):
-            key = (file_name, xml_table_match.raw_value or "", xml_table_match.matched_text)
+            key = (file_name, xml_table_match.raw_value or "", xml_table_match.matched_text, xml_table_match.unit)
             if key in seen_keys:
                 continue
             seen_keys.add(key)
@@ -426,7 +426,7 @@ def extract_order_backlog_matches(filing: DartFiling, files: dict[str, str]) -> 
             )
 
         for table_match in _extract_from_tables(content):
-            key = (file_name, table_match.raw_value or "", table_match.matched_text)
+            key = (file_name, table_match.raw_value or "", table_match.matched_text, table_match.unit)
             if key in seen_keys:
                 continue
             seen_keys.add(key)
@@ -446,7 +446,7 @@ def extract_order_backlog_matches(filing: DartFiling, files: dict[str, str]) -> 
             )
 
         for snippet in _extract_text_snippets(content):
-            key = (file_name, snippet.raw_value or "", snippet.matched_text)
+            key = (file_name, snippet.raw_value or "", snippet.matched_text, snippet.unit)
             if key in seen_keys:
                 continue
             seen_keys.add(key)
@@ -574,7 +574,18 @@ def matches_to_markdown(company: DartCompany, matches: list[OrderBacklogMatch]) 
 
 
 def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
-    expected_columns = ["filing_date", "report_name", "report_period", "amount_display", "amount_krw", "amount_eok"]
+    expected_columns = [
+        "filing_date",
+        "report_name",
+        "report_period",
+        "amount_display",
+        "amount_krw",
+        "amount_eok",
+        "raw_value",
+        "unit",
+        "matched_text",
+        "source_kind",
+    ]
     if df.empty or "matched_text" not in df.columns:
         return pd.DataFrame(columns=expected_columns)
 
@@ -600,7 +611,11 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
             total_df["amount_eok"] = total_df["amount_krw"].map(_to_eok_value)
             total_df["amount_display"] = total_df["amount_eok"].map(_format_eok)
             total_df["report_period"] = total_df["report_name"].map(_extract_report_period)
-            return total_df[["filing_date", "report_name", "report_period", "amount_display", "amount_krw", "amount_eok"]]
+            total_df["raw_value"] = None
+            total_df["unit"] = None
+            total_df["matched_text"] = None
+            total_df["source_kind"] = "aggregated"
+            return total_df[expected_columns]
 
         row_counts = df.groupby(["filing_date", "report_name"]).size().rename("row_count").reset_index()
         single_rows = row_counts.loc[row_counts["row_count"] == 1, ["filing_date", "report_name"]]
@@ -613,6 +628,14 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
         if not table_backed.empty:
             total_df = table_backed
 
+    # If the same extracted text/number was normalized with conflicting units,
+    # keep the smaller amount. A broader document-level unit can otherwise
+    # override a more local table-level unit and inflate values by x10~x1000.
+    conflict_columns = ["filing_date", "report_name", "source_file", "matched_text", "raw_value"]
+    if all(column in total_df.columns for column in conflict_columns):
+        total_df = total_df.sort_values(["filing_date", "report_name", "amount_krw"], ascending=[True, True, True])
+        total_df = total_df.drop_duplicates(subset=conflict_columns, keep="first")
+
     total_df["keyword_priority"] = total_df["matched_text"].map(_total_keyword_priority)
     total_df = total_df.sort_values(
         ["filing_date", "keyword_priority", "source_priority", "amount_krw"],
@@ -622,7 +645,7 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
     total_df["amount_eok"] = total_df["amount_krw"].map(_to_eok_value)
     total_df["amount_display"] = total_df["amount_eok"].map(_format_eok)
     total_df["report_period"] = total_df["report_name"].map(_extract_report_period)
-    return total_df[["filing_date", "report_name", "report_period", "amount_display", "amount_krw", "amount_eok"]]
+    return total_df[expected_columns]
 
 
 def batch_totals_to_markdown(results: list[tuple[DartCompany, pd.DataFrame]]) -> str:
@@ -1053,7 +1076,8 @@ def _extract_from_sales_and_orders_section(content: str) -> list[OrderBacklogMat
     if section is None:
         return []
 
-    unit = _detect_unit(" ".join(section.itertext()), loose=False) or _detect_document_unit(content)
+    section_text = " ".join(section.itertext())
+    section_unit = _detect_unit(section_text, loose=False) or _detect_document_unit(content)
     matches: list[OrderBacklogMatch] = []
 
     for table in section.iter("TABLE"):
@@ -1061,6 +1085,8 @@ def _extract_from_sales_and_orders_section(content: str) -> list[OrderBacklogMat
         if not grid:
             continue
         normalized_rows = [[_compact_text(cell) for cell in row] for row in grid]
+        table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
+        table_unit = _detect_nearest_unit(table_text, loose=False) or section_unit
         backlog_columns = _find_backlog_columns(normalized_rows)
         if not backlog_columns:
             continue
@@ -1087,8 +1113,8 @@ def _extract_from_sales_and_orders_section(content: str) -> list[OrderBacklogMat
                         source_file="",
                         matched_text=matched_text,
                         raw_value=raw_value,
-                        unit=unit,
-                        amount_krw=_normalize_amount(raw_value, unit),
+                        unit=table_unit,
+                        amount_krw=_normalize_amount(raw_value, table_unit),
                         source_kind="section_table",
                     )
                 )
@@ -1226,6 +1252,22 @@ def _find_backlog_columns(rows: list[list[str]]) -> list[int]:
         if any(keyword in header_text for keyword in BACKLOG_HEADER_KEYWORDS):
             backlog_columns.append(column_index)
     if backlog_columns:
+        amount_columns = [
+            column_index
+            for column_index in backlog_columns
+            if "금액" in _column_header_text(header_rows, column_index)
+        ]
+        if amount_columns:
+            return amount_columns
+
+        non_quantity_columns = [
+            column_index
+            for column_index in backlog_columns
+            if "수량" not in _column_header_text(header_rows, column_index)
+        ]
+        if non_quantity_columns:
+            return non_quantity_columns
+
         return backlog_columns
 
     full_header_text = _compact_text(" ".join(_column_header_text(header_rows, index) for index in range(len(header_rows[0]))))
