@@ -803,10 +803,10 @@ def _extract_from_tables(content: str) -> list[OrderBacklogMatch]:
         if not backlog_columns:
             continue
         context_start = max(table_match.start() - 3000, 0)
-        context_end = min(table_match.end() + 1000, len(content))
+        prior_context = content[context_start:table_match.start()]
         unit = (
             explicit_unit
-            or _detect_nearest_unit(content[context_start:context_end], loose=False)
+            or _detect_nearest_unit(prior_context, loose=False)
             or current_unit
             or _detect_document_unit(content)
         )
@@ -965,6 +965,10 @@ def _extract_text_snippets(content: str) -> list[OrderBacklogMatch]:
         start = max(index - 1, 0)
         end = min(index + 2, len(lines))
         snippet = " ".join(lines[start:end])
+        if _is_negative_backlog_context_safe(snippet):
+            continue
+        if _contains_foreign_currency_marker(snippet):
+            continue
         number = _pick_largest_number(snippet)
         if number is None:
             continue
@@ -994,8 +998,56 @@ def _extract_text_snippets(content: str) -> list[OrderBacklogMatch]:
     return snippets
 
 
+def _is_negative_backlog_context(text: str) -> bool:
+    normalized = _compact_text(text)
+    negative_phrases = [
+        "해당사항이없습니다",
+        "해당사항없습니다",
+        "수주상황이없습니다",
+        "수주잔고가없습니다",
+        "수주잔고는없습니다",
+        "수주잔고를정확히산출하기는어렵습니다",
+        "수주총액과수주잔고를정확히산출하기는어렵습니다",
+        "장기간의수주총액과수주잔고를정확히산출하기는어렵습니다",
+        "정확히산출하기는어렵습니다",
+        "산출하기어렵습니다",
+    ]
+    return any(phrase in normalized for phrase in negative_phrases)
+
+
+def _is_negative_backlog_context_safe(text: str) -> bool:
+    normalized = _compact_text(text)
+    negative_phrases = [
+        "\ud574\ub2f9\uc0ac\ud56d\uc774\uc5c6\uc2b5\ub2c8\ub2e4",
+        "\ud574\ub2f9\uc0ac\ud56d\uc5c6\uc2b5\ub2c8\ub2e4",
+        "\uc218\uc8fc\uc0c1\ud669\uc774\uc5c6\uc2b5\ub2c8\ub2e4",
+        "\uc218\uc8fc\uc794\uace0\uac00\uc5c6\uc2b5\ub2c8\ub2e4",
+        "\uc218\uc8fc\uc794\uace0\ub294\uc5c6\uc2b5\ub2c8\ub2e4",
+        "\uc218\uc8fc\uc794\uace0\ub97c\uc815\ud655\ud788\uc0b0\ucd9c\ud558\uae30\ub294\uc5b4\ub835\uc2b5\ub2c8\ub2e4",
+        "\uc218\uc8fc\ucd1d\uc561\uacfc\uc218\uc8fc\uc794\uace0\ub97c\uc815\ud655\ud788\uc0b0\ucd9c\ud558\uae30\ub294\uc5b4\ub835\uc2b5\ub2c8\ub2e4",
+        "\uc7a5\uae30\uac04\uc758\uc218\uc8fc\ucd1d\uc561\uacfc\uc218\uc8fc\uc794\uace0\ub97c\uc815\ud655\ud788\uc0b0\ucd9c\ud558\uae30\ub294\uc5b4\ub835\uc2b5\ub2c8\ub2e4",
+        "\uc815\ud655\ud788\uc0b0\ucd9c\ud558\uae30\ub294\uc5b4\ub835\uc2b5\ub2c8\ub2e4",
+        "\uc0b0\ucd9c\ud558\uae30\uc5b4\ub835\uc2b5\ub2c8\ub2e4",
+    ]
+    if any(phrase in normalized for phrase in negative_phrases):
+        return True
+
+    no_applicable = "\ud574\ub2f9\uc0ac\ud56d" in normalized and "\uc5c6\uc2b5\ub2c8\ub2e4" in normalized
+    backlog_not_available = "\uc218\uc8fc\uc0c1\ud669" in normalized and "\uc5c6\uc2b5\ub2c8\ub2e4" in normalized
+    backlog_hard_to_measure = (
+        "\uc218\uc8fc\uc794\uace0" in normalized
+        and "\uc0b0\ucd9c" in normalized
+        and "\uc5b4\ub835" in normalized
+    )
+    return no_applicable or backlog_not_available or backlog_hard_to_measure
+
+
 def _extract_backlog_summary_from_text(text: str, lines: list[str], unit: str | None) -> OrderBacklogMatch | None:
     normalized_text = _compact_text(text)
+    if _is_negative_backlog_context_safe(normalized_text):
+        return None
+    if _contains_foreign_currency_marker(text):
+        return None
     if "수주잔고" in normalized_text:
         section_text = normalized_text[normalized_text.rfind("수주잔고") :]
         total_match = re.search(r"합\s*계(?P<body>.*)", section_text)
@@ -1025,6 +1077,8 @@ def _extract_backlog_summary_from_text(text: str, lines: list[str], unit: str | 
     if not any("수주잔고" in line for line in normalized_lines):
         return None
     search_start = order_status_indices[-1]
+    if any(_is_negative_backlog_context_safe(line) for line in normalized_lines[search_start:]):
+        return None
 
     for index, line in enumerate(normalized_lines[search_start:], start=search_start):
         compact = line.replace(" ", "")
@@ -1145,10 +1199,10 @@ def _extract_from_xml_tables(content: str) -> list[OrderBacklogMatch]:
             continue
 
         context_start = max(table_match.start() - 3000, 0)
-        context_end = min(table_match.end() + 1000, len(content))
+        prior_context = content[context_start:table_match.start()]
         unit = (
             explicit_unit
-            or _detect_nearest_unit(content[context_start:context_end], loose=False)
+            or _detect_nearest_unit(prior_context, loose=False)
             or current_unit
             or _detect_document_unit(content)
         )
@@ -1409,6 +1463,8 @@ def _detect_document_unit(content: str) -> str | None:
 
 def _contains_foreign_currency_marker(text: str) -> bool:
     upper = text.upper()
+    if "$" in text:
+        return True
     if "KRW" in upper or "원화" in text:
         return False
     return any(marker in upper for marker in ["JPY", "USD", "EUR", "CNY", "VND", "IDR", "THB", "BAHT"])

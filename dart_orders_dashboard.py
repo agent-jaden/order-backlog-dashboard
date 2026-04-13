@@ -171,6 +171,9 @@ def _build_table(
 
 
 def _company_filename(company_name: str, stock_code: str | None) -> str:
+    base_name = "\uc2e0\uc131\uc774\uc5d4\uc9c0"
+    if company_name.startswith(base_name + "("):
+        company_name = base_name
     sanitized_name = "".join(char if char.isalnum() else "_" for char in company_name).strip("_")
     code_text = "".join(char for char in str(stock_code or "-") if char.isalnum()) or "-"
     if code_text.isdigit():

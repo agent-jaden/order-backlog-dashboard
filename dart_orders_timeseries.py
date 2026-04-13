@@ -107,7 +107,46 @@ def build_company_timeseries(
         all_matches.extend(extract_order_backlog_matches(filing, files))
 
     match_df = pd.DataFrame([match.__dict__ for match in all_matches])
+    if stock_code == "011930":
+        segmented = _build_manual_segmented_series(match_df)
+        markdown = _segmented_timeseries_to_markdown(
+            corp_name,
+            stock_code or "-",
+            segmented,
+            start_date,
+            end_date,
+        )
+        primary_series = segmented["클린환경"]["series_df"]
+        aggregate_frames = []
+        for segment_name in ["클린환경", "재생에너지"]:
+            segment_series = segmented[segment_name]["series_df"].copy()
+            if segment_series.empty:
+                continue
+            segment_series.insert(0, "stock_code", stock_code or "-")
+            segment_series.insert(0, "corp_name", f"{corp_name}({segment_name})")
+            segment_series.insert(0, "corp_code", f"{corp_code}_{'clean' if segment_name == '클린환경' else 'renew'}")
+            aggregate_frames.append(segment_series)
+        aggregate_df = pd.concat(aggregate_frames, ignore_index=True) if aggregate_frames else pd.DataFrame()
+        notes = segmented["클린환경"]["notes"] + segmented["재생에너지"]["notes"]
+        return {
+            "corp_code": corp_code,
+            "corp_name": corp_name,
+            "stock_code": stock_code or "-",
+            "start_date": start_date,
+            "end_date": end_date,
+            "filings_found": len(filings),
+            "filings_scanned": scanned_filings,
+            "filings_skipped": skipped_filings,
+            "series_df": primary_series,
+            "aggregate_df": aggregate_df,
+            "notes": notes,
+            "markdown": markdown,
+        }
+    match_df, filter_notes = _apply_manual_match_filters(match_df, corp_name, stock_code)
     total_df, summary_notes = _build_timeseries_total_summary(match_df)
+    total_df, override_notes = _apply_manual_timeseries_overrides(total_df, corp_name, stock_code)
+    summary_notes = filter_notes + summary_notes
+    summary_notes.extend(override_notes)
     if total_df.empty:
         raise ValueError("No order backlog totals could be extracted from the requested filings.")
     series_df, notes = _build_series_frame(total_df)
@@ -130,6 +169,7 @@ def build_company_timeseries(
         "filings_scanned": scanned_filings,
         "filings_skipped": skipped_filings,
         "series_df": series_df,
+        "aggregate_df": pd.DataFrame(),
         "notes": notes,
         "markdown": markdown,
     }
@@ -173,6 +213,95 @@ def _build_timeseries_total_summary(match_df: pd.DataFrame) -> tuple[pd.DataFram
     return corrected_df, notes
 
 
+def _apply_manual_match_filters(
+    match_df: pd.DataFrame,
+    corp_name: str,
+    stock_code: str | None,
+) -> tuple[pd.DataFrame, list[str]]:
+    if match_df.empty or stock_code != "030530":
+        return match_df, []
+
+    company_token = "\uc6d0\uc775\ud640\ub529\uc2a4"
+    filtered_df = match_df.loc[
+        match_df["matched_text"].fillna("").str.contains(company_token, regex=False)
+    ].copy()
+    removed_count = len(match_df) - len(filtered_df)
+    if removed_count <= 0:
+        return filtered_df, []
+
+    note = (
+        f"`{corp_name}` 은 자회사 수주잔고 혼입 방지를 위해 "
+        f"`matched_text` 에 `{corp_name}` 가 직접 포함된 후보만 인정하도록 수동 필터를 적용했습니다."
+    )
+    return filtered_df, [note]
+
+
+def _apply_manual_timeseries_overrides(
+    total_df: pd.DataFrame,
+    corp_name: str,
+    stock_code: str | None,
+) -> tuple[pd.DataFrame, list[str]]:
+    if total_df.empty or stock_code != "044180":
+        return total_df, []
+
+    overrides = {
+        ("2025.03", "분기보고서 (2025.03)"): 434.0,
+        ("2025.06", "반기보고서 (2025.06)"): 462.0,
+        ("2025.09", "[기재정정]분기보고서 (2025.09)"): 426.0,
+    }
+
+    adjusted_df = total_df.copy()
+    notes: list[str] = []
+    for (report_period, report_name), amount_eok in overrides.items():
+        mask = (adjusted_df["report_period"] == report_period) & (adjusted_df["report_name"] == report_name)
+        if not mask.any():
+            continue
+        amount_krw = int(amount_eok * 100_000_000)
+        adjusted_df.loc[mask, "amount_krw"] = amount_krw
+        adjusted_df.loc[mask, "amount_eok"] = amount_eok
+        adjusted_df.loc[mask, "amount_display"] = _format_number(amount_eok)
+        notes.append(
+            f"`{corp_name}` `{report_name}` (`{report_period}`) 은 보고서 단위 오류 예외로 "
+            f"수주잔고를 `{_format_number(amount_eok)}`억원으로 고정했습니다."
+        )
+
+    return adjusted_df, notes
+
+
+def _build_manual_segmented_series(match_df: pd.DataFrame) -> dict[str, dict[str, object]]:
+    segment_tokens = {
+        "클린환경": "\ud074\ub9b0\ub8f8 \ubc0f \uacf5\uc870\uc2dc\uc2a4\ud15c \uc81c\uc870, \uc124\uce58\uacf5\uc0ac \uc678",
+        "재생에너지": "\ud0dc\uc591\uad11 \ubaa8\ub4c8 \ub4f1",
+    }
+    source_priority = {"section_table": 0, "xml_table": 0, "table": 1, "snippet": 2, "generic": 3}
+    results: dict[str, dict[str, object]] = {}
+
+    for segment_name, token in segment_tokens.items():
+        segment_df = match_df.loc[match_df["matched_text"].fillna("").str.contains(token, regex=False)].copy()
+        if segment_df.empty:
+            results[segment_name] = {"series_df": pd.DataFrame(), "notes": [f"`{segment_name}` 후보를 찾지 못했습니다."]}
+            continue
+
+        segment_df["amount_krw"] = pd.to_numeric(segment_df["amount_krw"], errors="coerce")
+        segment_df = segment_df.dropna(subset=["amount_krw"]).copy()
+        segment_df["source_priority"] = segment_df["source_kind"].map(lambda value: source_priority.get(value, 9))
+        segment_df["report_period"] = segment_df["report_name"].map(_extract_report_period)
+        segment_df = segment_df.sort_values(
+            ["filing_date", "report_name", "amount_krw", "source_priority"],
+            ascending=[True, True, False, True],
+        )
+        segment_df = segment_df.drop_duplicates(subset=["filing_date", "report_name"], keep="first")
+        segment_df["amount_eok"] = segment_df["amount_krw"] / 100_000_000
+        segment_df["amount_display"] = segment_df["amount_eok"].map(_format_number)
+        total_df = segment_df[["filing_date", "report_name", "report_period", "amount_display", "amount_krw", "amount_eok"]].copy()
+        series_df, series_notes = _build_series_frame(total_df)
+        notes = [f"`{segment_name}` 은 `{token}` 라벨이 포함된 후보만 사용했습니다."]
+        if segment_name == "클린환경":
+            notes.append("같은 보고서에 클린환경 후보가 여러 개면 더 큰 값을 대표값으로 사용했습니다.")
+        notes.extend(series_notes)
+        results[segment_name] = {"series_df": series_df, "notes": notes}
+
+    return results
 
 
 def _build_total_candidates(df: pd.DataFrame) -> pd.DataFrame:
@@ -537,6 +666,71 @@ def _timeseries_to_markdown(
     lines.append("- 전기 대비 증감은 직전 유효 분기 대비 변화입니다.")
     lines.append("- YoY 증감은 전년 동기 대비 변화입니다.")
     lines.append("- 같은 기간 정정공시가 여러 건이면 최신 공시를 기본으로 사용하되, 주변 분기 대비 명백한 이상치는 보정하거나 제외합니다.")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _segmented_timeseries_to_markdown(
+    company_name: str,
+    stock_code: str,
+    segmented: dict[str, dict[str, object]],
+    start_date: str,
+    end_date: str,
+) -> str:
+    lines = [f"# {company_name} 사업부문별 분기 수주잔고 변화", ""]
+    lines.append(f"- 종목코드: `{stock_code}`")
+    lines.append(f"- 기준 기간: `{start_date}` ~ `{end_date}`")
+    lines.append("")
+
+    for segment_name in ["클린환경", "재생에너지"]:
+        segment = segmented[segment_name]
+        series_df = segment["series_df"]
+        notes = segment["notes"]
+        lines.append(f"## {segment_name}")
+        lines.append("")
+        if series_df.empty:
+            lines.append("- 추출 결과가 없습니다.")
+            lines.append("")
+            continue
+        latest_row = series_df.dropna(subset=["amount_eok"]).iloc[-1]
+        lines.append(f"- 추출 건수: `{len(series_df)}`")
+        lines.append(f"- 최신 기간: `{latest_row['report_period']}`")
+        lines.append(f"- 최신 수주잔고: `{latest_row['amount_display']}` 억원")
+        lines.append("")
+        if notes:
+            lines.append("### 선택 메모")
+            lines.append("")
+            for note in notes:
+                lines.append(f"- {note}")
+            lines.append("")
+        lines.append("### 시계열 표")
+        lines.append("")
+        lines.append("| 공시일 | 보고서 | 기간 | 수주잔고(억원) | 전기 대비 증감(억원) | 전기 대비 증감률 | YoY 증감(억원) | YoY 증감률 |")
+        lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |")
+        for _, row in series_df.iterrows():
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        str(row["filing_date"]),
+                        str(row["report_name"]),
+                        str(row["report_period"]),
+                        str(row["amount_display"]),
+                        str(row["change_display"]),
+                        str(row["change_pct_display"]),
+                        str(row["yoy_change_display"]),
+                        str(row["yoy_change_pct_display"]),
+                    ]
+                )
+                + " |"
+            )
+        lines.append("")
+
+    lines.append("## 해석")
+    lines.append("")
+    lines.append("- 클린환경과 재생에너지 사업부문은 각각 별도 시계열로 분리했습니다.")
+    lines.append("- 같은 보고서에서 동일 사업부문 후보가 여러 개면 대표값 1개만 선택했습니다.")
+    lines.append("- 값은 각 보고서 수주상황 표에서 추출한 사업부문별 수주잔고를 `억원` 기준으로 환산한 값입니다.")
     lines.append("")
     return "\n".join(lines)
 

@@ -205,10 +205,14 @@ def main() -> None:
                 end_date=args.end_date,
                 filings=filings,
             )
-            series_df = result["series_df"].copy()
-            series_df.insert(0, "stock_code", stock_code)
-            series_df.insert(0, "corp_name", corp_name)
-            series_df.insert(0, "corp_code", corp_code)
+            aggregate_df = result.get("aggregate_df")
+            if isinstance(aggregate_df, pd.DataFrame) and not aggregate_df.empty:
+                series_df = aggregate_df.copy()
+            else:
+                series_df = result["series_df"].copy()
+                series_df.insert(0, "stock_code", stock_code)
+                series_df.insert(0, "corp_name", corp_name)
+                series_df.insert(0, "corp_code", corp_code)
             series_df = series_df[AGGREGATE_COLUMNS]
             markdown_path.write_text(str(result["markdown"]), encoding="utf-8-sig")
             series_df.to_csv(cache_csv_path, index=False, encoding="utf-8-sig")
