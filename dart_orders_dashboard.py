@@ -13,6 +13,8 @@ QUARTER_SPECS = [
     ("2025.06", "반기보고서", "2025년 2분기"),
     ("2025.03", "분기보고서", "2025년 1분기"),
 ]
+GROWTH_STREAK_THRESHOLD_PCT = 20.0
+GROWTH_STREAK_MIN_QUARTERS = 3
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -87,10 +89,11 @@ def _build_quarter_section(
         lines.extend(["<p>데이터 없음</p>", "", "</details>", ""])
         return lines
 
+    lines.extend(_build_growth_streak_section(df, quarter_df, period, label))
     lines.extend(
         _build_table(
-            f"{label} 전기 대비 증감률 Top 10",
-            quarter_df.dropna(subset=["change_pct"]).sort_values(["change_pct", "amount_eok"], ascending=[False, False]).head(10),
+            f"{label} 전기 대비 증감률 Top 15",
+            quarter_df.dropna(subset=["change_pct"]).sort_values(["change_pct", "amount_eok"], ascending=[False, False]).head(15),
             "전기 대비 증감(억원)",
             lambda row: _fmt_num(row["change_eok"]),
             "전기 대비 증감률",
@@ -99,8 +102,8 @@ def _build_quarter_section(
     )
     lines.extend(
         _build_table(
-            f"{label} YoY 증감률 Top 10",
-            quarter_df.dropna(subset=["yoy_change_pct"]).sort_values(["yoy_change_pct", "amount_eok"], ascending=[False, False]).head(10),
+            f"{label} YoY 증감률 Top 15",
+            quarter_df.dropna(subset=["yoy_change_pct"]).sort_values(["yoy_change_pct", "amount_eok"], ascending=[False, False]).head(15),
             "YoY 증감(억원)",
             lambda row: _fmt_num(row["yoy_change_eok"]),
             "YoY 증감률",
@@ -139,6 +142,115 @@ def _build_quarter_section(
     )
     lines.extend(["</details>", ""])
     return lines
+
+
+def _build_growth_streak_section(
+    df: pd.DataFrame,
+    quarter_df: pd.DataFrame,
+    period: str,
+    label: str,
+) -> list[str]:
+    streak_df = _build_growth_streak_df(df, quarter_df, period)
+    lines = [f"### {label} 3분기 이상 연속 증가 기업", ""]
+    if streak_df.empty:
+        lines.extend(["<p>조건을 만족하는 기업 없음</p>", ""])
+        return lines
+
+    lines.extend(["<table>", "<thead>"])
+    lines.append(
+        "<tr><th>순위</th><th>기업명</th><th>수주잔고(억원)</th><th>연속 분기 수</th><th>현재 분기 판정</th><th>QoQ</th><th>YoY</th></tr>"
+    )
+    lines.extend(["</thead>", "<tbody>"])
+    for index, (_, row) in enumerate(streak_df.iterrows(), start=1):
+        lines.append(
+            "<tr>"
+            f"<td>{index}</td>"
+            f"<td>{_company_link(row)}</td>"
+            f"<td>{html.escape(_fmt_num(row['amount_eok']))}</td>"
+            f"<td>{int(row['streak_quarters'])}</td>"
+            f"<td>{html.escape(str(row['current_basis']))}</td>"
+            f"<td>{html.escape(_fmt_pct(row['change_pct']))}</td>"
+            f"<td>{html.escape(_fmt_pct(row['yoy_change_pct']))}</td>"
+            "</tr>"
+        )
+    lines.extend(["</tbody>", "</table>", ""])
+    return lines
+
+
+def _build_growth_streak_df(df: pd.DataFrame, quarter_df: pd.DataFrame, period: str) -> pd.DataFrame:
+    history_df = df.copy()
+    history_df["period_key"] = history_df["report_period"].map(_report_period_key)
+    target_period_key = _report_period_key(period)
+    history_df = history_df.dropna(subset=["period_key"]).copy()
+    history_df = history_df.loc[history_df["period_key"] <= target_period_key]
+    history_df = history_df.sort_values(["corp_code", "period_key", "filing_date"]).drop_duplicates(
+        ["corp_code", "report_period"], keep="last"
+    )
+
+    streak_rows: list[dict[str, object]] = []
+    for _, current_row in quarter_df.iterrows():
+        corp_history = history_df.loc[history_df["corp_code"] == current_row["corp_code"]].sort_values("period_key")
+        if corp_history.empty:
+            continue
+        streak_quarters = _count_growth_streak(corp_history)
+        if streak_quarters < GROWTH_STREAK_MIN_QUARTERS:
+            continue
+        streak_rows.append(
+            {
+                **current_row.to_dict(),
+                "streak_quarters": streak_quarters,
+                "current_basis": _growth_basis_label(current_row),
+                "growth_score": _growth_score(current_row),
+            }
+        )
+
+    if not streak_rows:
+        return pd.DataFrame()
+    return pd.DataFrame(streak_rows).sort_values(
+        ["streak_quarters", "growth_score", "amount_eok"],
+        ascending=[False, False, False],
+    ).reset_index(drop=True)
+
+
+def _count_growth_streak(corp_history: pd.DataFrame) -> int:
+    streak = 0
+    for _, row in corp_history.sort_values("period_key", ascending=False).iterrows():
+        if _is_growth_qualified(row):
+            streak += 1
+            continue
+        break
+    return streak
+
+
+def _is_growth_qualified(row: pd.Series) -> bool:
+    return _pct_at_least(row.get("change_pct"), GROWTH_STREAK_THRESHOLD_PCT) or _pct_at_least(
+        row.get("yoy_change_pct"), GROWTH_STREAK_THRESHOLD_PCT
+    )
+
+
+def _pct_at_least(value: float | int | None, threshold: float) -> bool:
+    return pd.notna(value) and float(value) >= threshold
+
+
+def _growth_basis_label(row: pd.Series) -> str:
+    qoq_ok = _pct_at_least(row.get("change_pct"), GROWTH_STREAK_THRESHOLD_PCT)
+    yoy_ok = _pct_at_least(row.get("yoy_change_pct"), GROWTH_STREAK_THRESHOLD_PCT)
+    if qoq_ok and yoy_ok:
+        return "QoQ / YoY"
+    if qoq_ok:
+        return "QoQ"
+    if yoy_ok:
+        return "YoY"
+    return "-"
+
+
+def _growth_score(row: pd.Series) -> float:
+    values = []
+    for key in ["change_pct", "yoy_change_pct"]:
+        value = row.get(key)
+        if pd.notna(value):
+            values.append(float(value))
+    return max(values) if values else float("-inf")
 
 
 def _build_table(
@@ -196,6 +308,15 @@ def _fmt_pct(value: float | int | None) -> str:
     if pd.isna(value):
         return "-"
     return f"{float(value):,.2f}%".rstrip("0").rstrip(".")
+
+
+def _report_period_key(report_period: str) -> int | None:
+    if not isinstance(report_period, str) or "." not in report_period:
+        return None
+    year_text, month_text = report_period.split(".", 1)
+    if not (year_text.isdigit() and month_text.isdigit()):
+        return None
+    return int(year_text) * 100 + int(month_text)
 
 
 if __name__ == "__main__":
