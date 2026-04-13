@@ -89,7 +89,7 @@ def _build_quarter_section(
         lines.extend(["<p>데이터 없음</p>", "", "</details>", ""])
         return lines
 
-    lines.extend(_build_growth_streak_section(df, quarter_df, period, label))
+    lines.extend(_build_growth_streak_sections(df, quarter_df, period, label))
     lines.extend(
         _build_table(
             f"{label} 전기 대비 증감률 Top 15",
@@ -144,21 +144,35 @@ def _build_quarter_section(
     return lines
 
 
-def _build_growth_streak_section(
+def _build_growth_streak_sections(
     df: pd.DataFrame,
     quarter_df: pd.DataFrame,
     period: str,
     label: str,
 ) -> list[str]:
-    streak_df = _build_growth_streak_df(df, quarter_df, period)
-    lines = [f"### {label} 3분기 이상 연속 증가 기업", ""]
+    lines: list[str] = []
+    lines.extend(_build_growth_streak_section(df, quarter_df, period, label, basis="yoy"))
+    lines.extend(_build_growth_streak_section(df, quarter_df, period, label, basis="qoq"))
+    return lines
+
+
+def _build_growth_streak_section(
+    df: pd.DataFrame,
+    quarter_df: pd.DataFrame,
+    period: str,
+    label: str,
+    basis: str,
+) -> list[str]:
+    streak_df = _build_growth_streak_df(df, quarter_df, period, basis=basis)
+    basis_label = "YoY" if basis == "yoy" else "QoQ"
+    lines = [f"### {label} {basis_label} 3분기 이상 연속 증가 기업", ""]
     if streak_df.empty:
         lines.extend(["<p>조건을 만족하는 기업 없음</p>", ""])
         return lines
 
     lines.extend(["<table>", "<thead>"])
     lines.append(
-        "<tr><th>순위</th><th>기업명</th><th>수주잔고(억원)</th><th>연속 분기 수</th><th>현재 분기 판정</th><th>QoQ</th><th>YoY</th></tr>"
+        f"<tr><th>순위</th><th>기업명</th><th>수주잔고(억원)</th><th>{basis_label} 연속 분기 수</th><th>현재 {basis_label}</th><th>QoQ</th><th>YoY</th></tr>"
     )
     lines.extend(["</thead>", "<tbody>"])
     for index, (_, row) in enumerate(streak_df.iterrows(), start=1):
@@ -168,7 +182,7 @@ def _build_growth_streak_section(
             f"<td>{_company_link(row)}</td>"
             f"<td>{html.escape(_fmt_num(row['amount_eok']))}</td>"
             f"<td>{int(row['streak_quarters'])}</td>"
-            f"<td>{html.escape(str(row['current_basis']))}</td>"
+            f"<td>{html.escape(_fmt_pct(row['basis_pct']))}</td>"
             f"<td>{html.escape(_fmt_pct(row['change_pct']))}</td>"
             f"<td>{html.escape(_fmt_pct(row['yoy_change_pct']))}</td>"
             "</tr>"
@@ -177,7 +191,12 @@ def _build_growth_streak_section(
     return lines
 
 
-def _build_growth_streak_df(df: pd.DataFrame, quarter_df: pd.DataFrame, period: str) -> pd.DataFrame:
+def _build_growth_streak_df(
+    df: pd.DataFrame,
+    quarter_df: pd.DataFrame,
+    period: str,
+    basis: str,
+) -> pd.DataFrame:
     history_df = df.copy()
     history_df["period_key"] = history_df["report_period"].map(_report_period_key)
     target_period_key = _report_period_key(period)
@@ -192,15 +211,15 @@ def _build_growth_streak_df(df: pd.DataFrame, quarter_df: pd.DataFrame, period: 
         corp_history = history_df.loc[history_df["corp_code"] == current_row["corp_code"]].sort_values("period_key")
         if corp_history.empty:
             continue
-        streak_quarters = _count_growth_streak(corp_history)
+        streak_quarters = _count_growth_streak(corp_history, basis=basis)
         if streak_quarters < GROWTH_STREAK_MIN_QUARTERS:
             continue
         streak_rows.append(
             {
                 **current_row.to_dict(),
                 "streak_quarters": streak_quarters,
-                "current_basis": _growth_basis_label(current_row),
-                "growth_score": _growth_score(current_row),
+                "basis_pct": _basis_value(current_row, basis),
+                "growth_score": _growth_score(current_row, basis),
             }
         )
 
@@ -212,45 +231,33 @@ def _build_growth_streak_df(df: pd.DataFrame, quarter_df: pd.DataFrame, period: 
     ).reset_index(drop=True)
 
 
-def _count_growth_streak(corp_history: pd.DataFrame) -> int:
+def _count_growth_streak(corp_history: pd.DataFrame, basis: str) -> int:
     streak = 0
     for _, row in corp_history.sort_values("period_key", ascending=False).iterrows():
-        if _is_growth_qualified(row):
+        if _is_growth_qualified(row, basis=basis):
             streak += 1
             continue
         break
     return streak
 
 
-def _is_growth_qualified(row: pd.Series) -> bool:
-    return _pct_at_least(row.get("change_pct"), GROWTH_STREAK_THRESHOLD_PCT) or _pct_at_least(
-        row.get("yoy_change_pct"), GROWTH_STREAK_THRESHOLD_PCT
-    )
+def _is_growth_qualified(row: pd.Series, basis: str) -> bool:
+    return _pct_at_least(_basis_value(row, basis), GROWTH_STREAK_THRESHOLD_PCT)
 
 
 def _pct_at_least(value: float | int | None, threshold: float) -> bool:
     return pd.notna(value) and float(value) >= threshold
 
 
-def _growth_basis_label(row: pd.Series) -> str:
-    qoq_ok = _pct_at_least(row.get("change_pct"), GROWTH_STREAK_THRESHOLD_PCT)
-    yoy_ok = _pct_at_least(row.get("yoy_change_pct"), GROWTH_STREAK_THRESHOLD_PCT)
-    if qoq_ok and yoy_ok:
-        return "QoQ / YoY"
-    if qoq_ok:
-        return "QoQ"
-    if yoy_ok:
-        return "YoY"
-    return "-"
+def _basis_value(row: pd.Series, basis: str) -> float | int | None:
+    if basis == "yoy":
+        return row.get("yoy_change_pct")
+    return row.get("change_pct")
 
 
-def _growth_score(row: pd.Series) -> float:
-    values = []
-    for key in ["change_pct", "yoy_change_pct"]:
-        value = row.get(key)
-        if pd.notna(value):
-            values.append(float(value))
-    return max(values) if values else float("-inf")
+def _growth_score(row: pd.Series, basis: str) -> float:
+    value = _basis_value(row, basis)
+    return float(value) if pd.notna(value) else float("-inf")
 
 
 def _build_table(
@@ -311,9 +318,10 @@ def _fmt_pct(value: float | int | None) -> str:
 
 
 def _report_period_key(report_period: str) -> int | None:
-    if not isinstance(report_period, str) or "." not in report_period:
+    report_period_text = str(report_period).strip()
+    if not report_period_text or report_period_text.lower() == "nan" or "." not in report_period_text:
         return None
-    year_text, month_text = report_period.split(".", 1)
+    year_text, month_text = report_period_text.split(".", 1)
     if not (year_text.isdigit() and month_text.isdigit()):
         return None
     return int(year_text) * 100 + int(month_text)
