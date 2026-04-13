@@ -63,10 +63,17 @@ def main() -> None:
     result = build_company_timeseries(client, company.corp_code, company.corp_name, company.stock_code, args.start_date, args.end_date)
     series_df = result["series_df"]
     markdown = result["markdown"]
+    cache_df = _result_to_cache_frame(result, company.corp_code, company.corp_name, company.stock_code)
 
     output_path = Path(args.output) if args.output else _default_output_path(company.corp_name, company.stock_code)
+    docs_output_path = _default_docs_output_path(company.corp_name, company.stock_code)
+    cache_csv_path = _default_cache_csv_path(company.corp_code)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    docs_output_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_csv_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown, encoding="utf-8-sig")
+    docs_output_path.write_text(markdown, encoding="utf-8-sig")
+    cache_df.to_csv(cache_csv_path, index=False, encoding="utf-8-sig")
 
     print(f"Company: {company.corp_name} ({company.stock_code or '-'})")
     print(f"Filings found: {result['filings_found']}")
@@ -74,6 +81,8 @@ def main() -> None:
     print(f"Filings skipped: {result['filings_skipped']}")
     print(f"Time-series rows: {len(series_df)}")
     print(f"Markdown saved to: {output_path}")
+    print(f"Docs markdown saved to: {docs_output_path}")
+    print(f"Cache CSV saved to: {cache_csv_path}")
 
 
 def build_company_timeseries(
@@ -753,6 +762,31 @@ def _format_pct(value: float | None) -> str:
         return "-"
     sign = "+" if value > 0 else ""
     return f"{sign}{value:,.2f}%".rstrip("0").rstrip(".")
+
+
+def _result_to_cache_frame(
+    result: dict[str, object],
+    corp_code: str,
+    corp_name: str,
+    stock_code: str | None,
+) -> pd.DataFrame:
+    aggregate_df = result.get("aggregate_df")
+    if isinstance(aggregate_df, pd.DataFrame) and not aggregate_df.empty:
+        return aggregate_df.copy()
+
+    series_df = result["series_df"].copy()
+    series_df.insert(0, "stock_code", stock_code or "-")
+    series_df.insert(0, "corp_name", corp_name)
+    series_df.insert(0, "corp_code", corp_code)
+    return series_df
+
+
+def _default_cache_csv_path(corp_code: str) -> Path:
+    return Path("outputs") / ".timeseries_cache" / f"{str(corp_code).zfill(8)}.csv"
+
+
+def _default_docs_output_path(company_name: str, stock_code: str | None) -> Path:
+    return Path("docs") / "companies" / _default_output_path(company_name, stock_code).name
 
 
 def _default_output_path(company_name: str, stock_code: str | None) -> Path:
