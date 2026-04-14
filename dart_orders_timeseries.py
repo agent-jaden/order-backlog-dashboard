@@ -8,7 +8,14 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from trade_tracker.config import get_settings
-from trade_tracker.dart import DartClient, DartFiling, _normalize_amount, build_total_summary, extract_order_backlog_matches
+from trade_tracker.dart import (
+    SOURCE_PRIORITY,
+    DartClient,
+    DartFiling,
+    _normalize_amount,
+    build_total_summary,
+    extract_order_backlog_matches,
+)
 
 
 load_dotenv()
@@ -299,7 +306,6 @@ def _build_manual_segmented_series(match_df: pd.DataFrame) -> dict[str, dict[str
         "클린환경": "\ud074\ub9b0\ub8f8 \ubc0f \uacf5\uc870\uc2dc\uc2a4\ud15c \uc81c\uc870, \uc124\uce58\uacf5\uc0ac \uc678",
         "재생에너지": "\ud0dc\uc591\uad11 \ubaa8\ub4c8 \ub4f1",
     }
-    source_priority = {"section_table": 0, "xml_table": 0, "table": 1, "snippet": 2, "generic": 3}
     results: dict[str, dict[str, object]] = {}
 
     for segment_name, token in segment_tokens.items():
@@ -310,11 +316,11 @@ def _build_manual_segmented_series(match_df: pd.DataFrame) -> dict[str, dict[str
 
         segment_df["amount_krw"] = pd.to_numeric(segment_df["amount_krw"], errors="coerce")
         segment_df = segment_df.dropna(subset=["amount_krw"]).copy()
-        segment_df["source_priority"] = segment_df["source_kind"].map(lambda value: source_priority.get(value, 9))
+        segment_df["source_priority"] = segment_df["source_kind"].map(lambda value: SOURCE_PRIORITY.get(value, 9))
         segment_df["report_period"] = segment_df["report_name"].map(_extract_report_period)
         segment_df = segment_df.sort_values(
-            ["filing_date", "report_name", "amount_krw", "source_priority"],
-            ascending=[True, True, False, True],
+            ["filing_date", "report_name", "source_priority", "amount_krw"],
+            ascending=[True, True, True, False],
         )
         segment_df = segment_df.drop_duplicates(subset=["filing_date", "report_name"], keep="first")
         segment_df["amount_eok"] = segment_df["amount_krw"] / 100_000_000
@@ -392,12 +398,21 @@ def _build_series_frame(total_df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]
 
 
 def _select_period_candidates(candidate_df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    candidate_df = candidate_df.copy()
+    candidate_df["source_priority"] = candidate_df["source_kind"].map(lambda value: SOURCE_PRIORITY.get(value, 9))
+
     grouped = {
         period: group.sort_values(["filing_date", "report_name"]).reset_index(drop=True)
         for period, group in candidate_df.groupby("report_period", sort=True)
     }
     ordered_periods = sorted(grouped.keys())
-    selected_rows: list[pd.Series] = [group.iloc[-1].copy() for _, group in sorted(grouped.items())]
+    selected_rows: list[pd.Series] = []
+    for _, group in sorted(grouped.items()):
+        selected_row = group.sort_values(
+            ["filing_date", "source_priority", "amount_krw", "report_name"],
+            ascending=[False, True, False, False],
+        ).iloc[0]
+        selected_rows.append(selected_row.copy())
     notes: list[str] = []
 
     for index, period in enumerate(ordered_periods):

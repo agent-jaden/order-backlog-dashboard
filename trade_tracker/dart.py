@@ -56,6 +56,14 @@ UNIT_MULTIPLIERS = {
     "십억원": 1_000_000_000,
 }
 
+SOURCE_PRIORITY = {
+    "section_table": 0,
+    "xml_table": 1,
+    "table": 2,
+    "snippet": 3,
+    "generic": 4,
+}
+
 NUMBER_PATTERN = re.compile(r"(?<!\d)(-?\d[\d,]*(?:\.\d+)?)(?!\d)")
 TAG_PATTERN = re.compile(r"<[^>]+>")
 WHITESPACE_PATTERN = re.compile(r"[ \t]+")
@@ -594,17 +602,24 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
         df["amount_eok"] = df["amount_krw"].map(_to_eok_value)
     if "amount_display" not in df.columns:
         df["amount_display"] = df["amount_eok"].map(_format_eok)
-    source_priority = {"section_table": 0, "xml_table": 0, "table": 1, "snippet": 2, "generic": 3}
-    df["source_priority"] = df["source_kind"].map(lambda value: source_priority.get(value, 9))
+    df["source_priority"] = df["source_kind"].map(_source_priority)
 
-    total_mask = (
-        df["matched_text"].str.contains(r"(?:합\s*계|총\s*계|연결합계|기말수주잔고|수주잔고\s*총액|계약잔액)", na=False, regex=True)
-        | df["matched_text"].str.contains(r"\|\s*계\s*\|", na=False, regex=True)
-    )
-    total_df = df.loc[total_mask].copy()
+    matched_text = df["matched_text"].fillna("")
+    total_terms = [
+        "수주잔고 금액",
+        "합계",
+        "총계",
+        "기말수주잔고",
+        "수주잔고 총액",
+        "총 수주잔고",
+        "계약잔액",
+    ]
+    total_mask = matched_text.map(lambda text: any(term in text for term in total_terms))
+    total_df = df.loc[total_mask & df["amount_krw"].notna()].copy()
+
     if total_df.empty:
-        table_backed = df.loc[df["source_priority"] <= 1].copy()
-        amount_like = table_backed.loc[~table_backed["matched_text"].str.contains(r"수량", na=False)].copy()
+        table_backed = df.loc[df["source_priority"] <= 2].copy()
+        amount_like = table_backed.loc[~table_backed["matched_text"].fillna("").str.contains("수량", na=False)].copy()
         amount_like = amount_like.dropna(subset=["amount_krw"])
         if not amount_like.empty:
             total_df = amount_like.groupby(["filing_date", "report_name"], as_index=False)["amount_krw"].sum()
@@ -620,23 +635,23 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
         row_counts = df.groupby(["filing_date", "report_name"]).size().rename("row_count").reset_index()
         single_rows = row_counts.loc[row_counts["row_count"] == 1, ["filing_date", "report_name"]]
         total_df = df.merge(single_rows, on=["filing_date", "report_name"], how="inner")
-        total_df = total_df.loc[total_df["source_priority"] <= 1].copy()
+        total_df = total_df.loc[total_df["source_priority"] <= 2].copy()
         if total_df.empty:
             return pd.DataFrame(columns=expected_columns)
     else:
-        table_backed = total_df.loc[total_df["source_priority"] <= 1].copy()
+        table_backed = total_df.loc[total_df["source_priority"] <= 2].copy()
         if not table_backed.empty:
             total_df = table_backed
 
-    # If the same extracted text/number was normalized with conflicting units,
-    # keep the smaller amount. A broader document-level unit can otherwise
-    # override a more local table-level unit and inflate values by x10~x1000.
     conflict_columns = ["filing_date", "report_name", "source_file", "matched_text", "raw_value"]
     if all(column in total_df.columns for column in conflict_columns):
-        total_df = total_df.sort_values(["filing_date", "report_name", "amount_krw"], ascending=[True, True, True])
+        total_df = total_df.sort_values(
+            ["source_priority", "filing_date", "report_name", "amount_krw"],
+            ascending=[True, True, True, False],
+        )
         total_df = total_df.drop_duplicates(subset=conflict_columns, keep="first")
 
-    total_df["keyword_priority"] = total_df["matched_text"].map(_total_keyword_priority)
+    total_df["keyword_priority"] = total_df["matched_text"].fillna("").map(_total_keyword_priority)
     total_df = total_df.sort_values(
         ["filing_date", "keyword_priority", "source_priority", "amount_krw"],
         ascending=[True, True, True, False],
@@ -646,8 +661,6 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
     total_df["amount_display"] = total_df["amount_eok"].map(_format_eok)
     total_df["report_period"] = total_df["report_name"].map(_extract_report_period)
     return total_df[expected_columns]
-
-
 def batch_totals_to_markdown(results: list[tuple[DartCompany, pd.DataFrame]]) -> str:
     lines = ["# 기업별 수주잔고 합계 비교", ""]
     lines.append(f"- 대상 기업 수: `{len(results)}`")
@@ -795,50 +808,25 @@ def _extract_from_tables(content: str) -> list[OrderBacklogMatch]:
         normalized_rows = table.fillna("").astype(str).apply(lambda column: column.map(_compact_text)).values.tolist()
         if not normalized_rows:
             continue
-        table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
-        explicit_unit = _detect_nearest_unit(table_text, loose=False)
-        if explicit_unit:
-            current_unit = explicit_unit
-        backlog_columns = _find_backlog_columns(normalized_rows)
-        if not backlog_columns:
-            continue
         context_start = max(table_match.start() - 3000, 0)
         prior_context = content[context_start:table_match.start()]
-        unit = (
-            explicit_unit
-            or _detect_nearest_unit(prior_context, loose=False)
-            or _detect_nearest_unit(prior_context, loose=True)
-            or current_unit
-            or _detect_document_unit(content)
+        unit = _infer_backlog_unit(
+            content,
+            table_text=" ".join(cell for row in normalized_rows for cell in row if cell),
+            local_context=prior_context,
+            inherited_unit=current_unit,
         )
-
-        header_rows = _estimate_header_row_count(normalized_rows)
-        for row in normalized_rows[header_rows:]:
-            if len(row) <= max(backlog_columns):
-                continue
-            label = _build_row_label(row, backlog_columns[0])
-            for backlog_col in backlog_columns:
-                raw_value = _clean_numeric_text(row[backlog_col])
-                if raw_value is None:
-                    continue
-                header = _column_header_text(normalized_rows[:header_rows], backlog_col)
-                matched_text = _compact_text(f"{label} | {header} | {raw_value}")
-                if _contains_foreign_currency_marker(matched_text):
-                    continue
-                matches.append(
-                    OrderBacklogMatch(
-                        receipt_no="",
-                        filing_date="",
-                        report_name="",
-                        report_label="",
-                        source_file="",
-                        matched_text=matched_text,
-                        raw_value=raw_value,
-                        unit=unit,
-                        amount_krw=_normalize_amount(raw_value, unit),
-                        source_kind="table",
-                    )
-                )
+        if unit:
+            current_unit = unit
+        matches.extend(
+            _extract_backlog_matches_from_rows(
+                content,
+                normalized_rows,
+                source_kind="table",
+                local_context=prior_context,
+                inherited_unit=unit,
+            )
+        )
 
     return matches
 
@@ -957,7 +945,6 @@ def _parse_html_tables(content: str) -> list[list[list[str]]]:
 def _extract_text_snippets(content: str) -> list[OrderBacklogMatch]:
     text = _html_to_text(content)
     lines = [line.strip() for line in text.splitlines() if line.strip()]
-    unit = _detect_unit(text, loose=True)
     snippets: list[OrderBacklogMatch] = []
 
     for index, line in enumerate(lines):
@@ -973,6 +960,7 @@ def _extract_text_snippets(content: str) -> list[OrderBacklogMatch]:
         number = _pick_largest_number(snippet)
         if number is None:
             continue
+        unit = _infer_backlog_unit(content, table_text=snippet, local_context=snippet)
         snippets.append(
             OrderBacklogMatch(
                 receipt_no="",
@@ -988,7 +976,7 @@ def _extract_text_snippets(content: str) -> list[OrderBacklogMatch]:
             )
         )
 
-    summary_match = _extract_backlog_summary_from_text(text, lines, unit)
+    summary_match = _extract_backlog_summary_from_text(text, lines, _infer_backlog_unit(content, table_text=text, local_context=text))
     if summary_match is not None:
         if not any(
             item.raw_value == summary_match.raw_value and item.matched_text == summary_match.matched_text
@@ -1126,13 +1114,85 @@ def _compact_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _source_priority(source_kind: str | None) -> int:
+    return SOURCE_PRIORITY.get(source_kind or "generic", 9)
+
+
+def _infer_backlog_unit(
+    content: str,
+    *,
+    table_text: str = "",
+    local_context: str = "",
+    inherited_unit: str | None = None,
+) -> str | None:
+    return (
+        _detect_unit(table_text, loose=False)
+        or _detect_nearest_unit(local_context, loose=False)
+        or inherited_unit
+        or _detect_document_unit(content)
+    )
+
+
+def _extract_backlog_matches_from_rows(
+    content: str,
+    normalized_rows: list[list[str]],
+    *,
+    source_kind: str,
+    local_context: str = "",
+    inherited_unit: str | None = None,
+) -> list[OrderBacklogMatch]:
+    if not normalized_rows:
+        return []
+
+    table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
+    unit = _infer_backlog_unit(
+        content,
+        table_text=table_text,
+        local_context=local_context or table_text,
+        inherited_unit=inherited_unit,
+    )
+    backlog_columns = _find_backlog_columns(normalized_rows)
+    if not backlog_columns:
+        return []
+
+    header_rows = _estimate_header_row_count(normalized_rows)
+    matches: list[OrderBacklogMatch] = []
+    for row in normalized_rows[header_rows:]:
+        if len(row) <= max(backlog_columns):
+            continue
+        label = _build_row_label(row, backlog_columns[0])
+        for backlog_col in backlog_columns:
+            raw_value = _clean_numeric_text(row[backlog_col])
+            if raw_value is None:
+                continue
+            header = _column_header_text(normalized_rows[:header_rows], backlog_col)
+            matched_text = _compact_text(f"{label} | {header} | {raw_value}")
+            if _contains_foreign_currency_marker(matched_text):
+                continue
+            matches.append(
+                OrderBacklogMatch(
+                    receipt_no="",
+                    filing_date="",
+                    report_name="",
+                    report_label="",
+                    source_file="",
+                    matched_text=matched_text,
+                    raw_value=raw_value,
+                    unit=unit,
+                    amount_krw=_normalize_amount(raw_value, unit),
+                    source_kind=source_kind,
+                )
+            )
+    return matches
+
+
 def _extract_from_sales_and_orders_section(content: str) -> list[OrderBacklogMatch]:
     section = _find_sales_and_orders_section(content)
     if section is None:
         return []
 
     section_text = " ".join(section.itertext())
-    section_unit = _detect_unit(section_text, loose=False) or _detect_document_unit(content)
+    section_unit = _infer_backlog_unit(content, table_text=section_text, local_context=section_text)
     matches: list[OrderBacklogMatch] = []
 
     for table in section.iter("TABLE"):
@@ -1140,39 +1200,15 @@ def _extract_from_sales_and_orders_section(content: str) -> list[OrderBacklogMat
         if not grid:
             continue
         normalized_rows = [[_compact_text(cell) for cell in row] for row in grid]
-        table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
-        table_unit = _detect_nearest_unit(table_text, loose=False) or section_unit
-        backlog_columns = _find_backlog_columns(normalized_rows)
-        if not backlog_columns:
-            continue
-
-        header_rows = _estimate_header_row_count(normalized_rows)
-        for row in normalized_rows[header_rows:]:
-            if len(row) <= max(backlog_columns):
-                continue
-            label = _build_row_label(row, backlog_columns[0])
-            for backlog_col in backlog_columns:
-                raw_value = _clean_numeric_text(row[backlog_col])
-                if raw_value is None:
-                    continue
-                header = _column_header_text(normalized_rows[:header_rows], backlog_col)
-                matched_text = _compact_text(f"{label} | {header} | {raw_value}")
-                if _contains_foreign_currency_marker(matched_text):
-                    continue
-                matches.append(
-                    OrderBacklogMatch(
-                        receipt_no="",
-                        filing_date="",
-                        report_name="",
-                        report_label="",
-                        source_file="",
-                        matched_text=matched_text,
-                        raw_value=raw_value,
-                        unit=table_unit,
-                        amount_krw=_normalize_amount(raw_value, table_unit),
-                        source_kind="section_table",
-                    )
-                )
+        matches.extend(
+            _extract_backlog_matches_from_rows(
+                content,
+                normalized_rows,
+                source_kind="section_table",
+                local_context=section_text,
+                inherited_unit=section_unit,
+            )
+        )
 
     return matches
 
@@ -1191,49 +1227,25 @@ def _extract_from_xml_tables(content: str) -> list[OrderBacklogMatch]:
         if not grid:
             continue
         normalized_rows = [[_compact_text(cell) for cell in row] for row in grid]
-        table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
-        explicit_unit = _detect_nearest_unit(table_text, loose=False)
-        if explicit_unit:
-            current_unit = explicit_unit
-        backlog_columns = _find_backlog_columns(normalized_rows)
-        if not backlog_columns:
-            continue
-
         context_start = max(table_match.start() - 3000, 0)
         prior_context = content[context_start:table_match.start()]
-        unit = (
-            explicit_unit
-            or _detect_nearest_unit(prior_context, loose=False)
-            or current_unit
-            or _detect_document_unit(content)
+        unit = _infer_backlog_unit(
+            content,
+            table_text=" ".join(cell for row in normalized_rows for cell in row if cell),
+            local_context=prior_context,
+            inherited_unit=current_unit,
         )
-        header_rows = _estimate_header_row_count(normalized_rows)
-        for row in normalized_rows[header_rows:]:
-            if len(row) <= max(backlog_columns):
-                continue
-            label = _build_row_label(row, backlog_columns[0])
-            for backlog_col in backlog_columns:
-                raw_value = _clean_numeric_text(row[backlog_col])
-                if raw_value is None:
-                    continue
-                header = _column_header_text(normalized_rows[:header_rows], backlog_col)
-                matched_text = _compact_text(f"{label} | {header} | {raw_value}")
-                if _contains_foreign_currency_marker(matched_text):
-                    continue
-                matches.append(
-                    OrderBacklogMatch(
-                        receipt_no="",
-                        filing_date="",
-                        report_name="",
-                        report_label="",
-                        source_file="",
-                        matched_text=matched_text,
-                        raw_value=raw_value,
-                        unit=unit,
-                        amount_krw=_normalize_amount(raw_value, unit),
-                        source_kind="xml_table",
-                    )
-                )
+        if unit:
+            current_unit = unit
+        matches.extend(
+            _extract_backlog_matches_from_rows(
+                content,
+                normalized_rows,
+                source_kind="xml_table",
+                local_context=prior_context,
+                inherited_unit=unit,
+            )
+        )
     return matches
 
 
