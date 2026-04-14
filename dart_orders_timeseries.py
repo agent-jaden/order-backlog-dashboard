@@ -8,7 +8,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from trade_tracker.config import get_settings
-from trade_tracker.dart import DartClient, DartFiling, build_total_summary, extract_order_backlog_matches
+from trade_tracker.dart import DartClient, DartFiling, _normalize_amount, build_total_summary, extract_order_backlog_matches
 
 
 load_dotenv()
@@ -227,22 +227,39 @@ def _apply_manual_match_filters(
     corp_name: str,
     stock_code: str | None,
 ) -> tuple[pd.DataFrame, list[str]]:
-    if match_df.empty or stock_code != "030530":
+    if match_df.empty:
         return match_df, []
 
+    notes: list[str] = []
+    adjusted_df = match_df.copy()
+
+    if stock_code == "226340":
+        valid_mask = adjusted_df["raw_value"].notna() & adjusted_df["raw_value"].astype(str).str.strip().ne("")
+        if valid_mask.any():
+            adjusted_df.loc[valid_mask, "unit"] = "KRW"
+            adjusted_df.loc[valid_mask, "amount_krw"] = adjusted_df.loc[valid_mask, "raw_value"].map(
+                lambda value: _normalize_amount(value, None)
+            )
+            notes.append(
+                f"`{corp_name}` has no explicit unit in the backlog table, so a company-specific manual override treats raw values as KRW."
+            )
+
+    if stock_code != "030530":
+        return adjusted_df, notes
+
     company_token = "\uc6d0\uc775\ud640\ub529\uc2a4"
-    filtered_df = match_df.loc[
-        match_df["matched_text"].fillna("").str.contains(company_token, regex=False)
+    filtered_df = adjusted_df.loc[
+        adjusted_df["matched_text"].fillna("").str.contains(company_token, regex=False)
     ].copy()
-    removed_count = len(match_df) - len(filtered_df)
+    removed_count = len(adjusted_df) - len(filtered_df)
     if removed_count <= 0:
-        return filtered_df, []
+        return filtered_df, notes
 
     note = (
         f"`{corp_name}` 은 자회사 수주잔고 혼입 방지를 위해 "
         f"`matched_text` 에 `{corp_name}` 가 직접 포함된 후보만 인정하도록 수동 필터를 적용했습니다."
     )
-    return filtered_df, [note]
+    return filtered_df, notes + [note]
 
 
 def _apply_manual_timeseries_overrides(

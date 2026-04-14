@@ -74,6 +74,12 @@ def _write_companies_index() -> None:
 
 
 def _replace_local_company_links(text: str, prefix: str) -> str:
+    href_pattern = re.compile(r'href="([^"]+_수주잔고\(\d+\)\.md)"')
+    text = href_pattern.sub(lambda match: f'href="{prefix}{Path(match.group(1)).stem}/"', text)
+
+    markdown_pattern = re.compile(r"\((?:\./)?([^)\r\n]+_수주잔고\(\d+\)\.md)\)")
+    text = markdown_pattern.sub(lambda match: f"({prefix}{match.group(1)})", text)
+
     for source in OUTPUTS_DIR.glob("*_수주잔고(*).md"):
         relative_md = f"{prefix}{source.name}"
         relative_page = f"{prefix}{source.stem}/"
