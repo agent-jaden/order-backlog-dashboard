@@ -807,6 +807,7 @@ def _extract_from_tables(content: str) -> list[OrderBacklogMatch]:
         unit = (
             explicit_unit
             or _detect_nearest_unit(prior_context, loose=False)
+            or _detect_nearest_unit(prior_context, loose=True)
             or current_unit
             or _detect_document_unit(content)
         )

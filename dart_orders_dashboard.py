@@ -89,7 +89,6 @@ def _build_quarter_section(
         lines.extend(["<p>데이터 없음</p>", "", "</details>", ""])
         return lines
 
-    lines.extend(_build_growth_streak_sections(df, quarter_df, period, label))
     lines.extend(
         _build_table(
             f"{label} 전기 대비 증감률 Top 15",
@@ -140,6 +139,7 @@ def _build_quarter_section(
             lambda row: _fmt_pct(row["yoy_change_pct"]),
         )
     )
+    lines.extend(_build_growth_streak_sections(df, quarter_df, period, label))
     lines.extend(["</details>", ""])
     return lines
 
@@ -171,11 +171,17 @@ def _build_growth_streak_section(
         return lines
 
     lines.extend(["<table>", "<thead>"])
-    lines.append(
-        f"<tr><th>순위</th><th>기업명</th><th>수주잔고(억원)</th><th>{basis_label} 연속 분기 수</th><th>현재 {basis_label}</th><th>QoQ</th><th>YoY</th></tr>"
-    )
+    if basis == "yoy":
+        lines.append(
+            "<tr><th>순위</th><th>기업명</th><th>수주잔고(억원)</th><th>YoY 연속 분기 수</th><th>현재 YoY</th><th>YoY 증감(억원)</th></tr>"
+        )
+    else:
+        lines.append(
+            "<tr><th>순위</th><th>기업명</th><th>수주잔고(억원)</th><th>QoQ 연속 분기 수</th><th>현재 QoQ</th><th>전기 대비 증감(억원)</th></tr>"
+        )
     lines.extend(["</thead>", "<tbody>"])
     for index, (_, row) in enumerate(streak_df.iterrows(), start=1):
+        extra_value = _fmt_num(row["yoy_change_eok"]) if basis == "yoy" else _fmt_num(row["change_eok"])
         lines.append(
             "<tr>"
             f"<td>{index}</td>"
@@ -183,8 +189,7 @@ def _build_growth_streak_section(
             f"<td>{html.escape(_fmt_num(row['amount_eok']))}</td>"
             f"<td>{int(row['streak_quarters'])}</td>"
             f"<td>{html.escape(_fmt_pct(row['basis_pct']))}</td>"
-            f"<td>{html.escape(_fmt_pct(row['change_pct']))}</td>"
-            f"<td>{html.escape(_fmt_pct(row['yoy_change_pct']))}</td>"
+            f"<td>{html.escape(extra_value)}</td>"
             "</tr>"
         )
     lines.extend(["</tbody>", "</table>", ""])
