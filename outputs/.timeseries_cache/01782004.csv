@@ -1,0 +1,4 @@
+﻿corp_code,corp_name,stock_code,filing_date,report_name,report_period,amount_display,change_display,change_pct_display,yoy_change_display,yoy_change_pct_display,amount_eok,change_eok,change_pct,yoy_change_eok,yoy_change_pct
+01782004,뉴로핏,380550,20250814,반기보고서 (2025.06),2025.06,10.5,-,-,-,-,10.49946,,,,
+01782004,뉴로핏,380550,20251114,분기보고서 (2025.09),2025.09,7.53,-2.97,-28.26%,-,-,7.53266,-2.966799999999999,-28.256691296504766,,
+01782004,뉴로핏,380550,20260320,사업보고서 (2025.12),2025.12,8.26,+0.72,+9.59%,-,-,8.25534,0.7226800000000004,9.59395485791208,,

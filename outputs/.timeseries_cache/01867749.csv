@@ -1,0 +1,4 @@
+﻿corp_code,corp_name,stock_code,filing_date,report_name,report_period,amount_display,change_display,change_pct_display,yoy_change_display,yoy_change_pct_display,amount_eok,change_eok,change_pct,yoy_change_eok,yoy_change_pct
+01867749,유비씨,495810,20241224,사업보고서 (2023.12),2023.12,15.19,-,-,-,-,15.19324,,,,
+01867749,유비씨,495810,20250321,사업보고서 (2024.12),2024.12,6.1,-9.09,-59.83%,-9.09,-59.83%,6.10375,-9.08949,-59.82588309011112,-9.08949,-59.825883090111134
+01867749,유비씨,495810,20260323,사업보고서 (2025.12),2025.12,7.83,+1.72,+28.23%,+1.72,+28.23%,7.82665,1.7229,28.226909686668034,1.7229,28.226909686668034

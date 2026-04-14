@@ -1,0 +1,4 @@
+﻿corp_code,corp_name,stock_code,filing_date,report_name,report_period,amount_display,change_display,change_pct_display,yoy_change_display,yoy_change_pct_display,amount_eok,change_eok,change_pct,yoy_change_eok,yoy_change_pct
+00310156,셀루메드,049180,20231113,분기보고서 (2023.09),2023.09,"1,483.38",-,-,-,-,1483.38,,,,
+00310156,셀루메드,049180,20240322,[기재정정]사업보고서 (2023.12),2023.12,"1,673.4",+190.02,+12.81%,-,-,1673.4,190.01999999999998,12.809934069489938,,
+00310156,셀루메드,049180,20251114,분기보고서 (2025.09),2025.09,"1,394.68",-278.72,-16.66%,-,-,1394.68,-278.72,-16.655910123102668,,
