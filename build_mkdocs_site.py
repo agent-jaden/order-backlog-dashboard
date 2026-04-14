@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parent
 OUTPUTS_DIR = ROOT / "outputs" / "수주잔고"
 DOCS_DIR = ROOT / "docs"
 COMPANIES_DIR = DOCS_DIR / "companies"
+SITE_BASE = "/order-backlog-dashboard/"
 
 
 def main() -> None:
@@ -45,7 +46,7 @@ def _export_dashboard() -> None:
     source = OUTPUTS_DIR / "수주잔고_대시보드.md"
     target = DOCS_DIR / "dashboard.md"
     text = source.read_text(encoding="utf-8-sig")
-    text = _replace_local_company_links(text, prefix="../companies/")
+    text = _replace_local_company_links(text, prefix=f"{SITE_BASE}companies/")
     target.write_text(text, encoding="utf-8")
 
 
