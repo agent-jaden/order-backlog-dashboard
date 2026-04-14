@@ -35,6 +35,14 @@ RESULT_COLUMNS = [
 
 CORP_CODE_WIDTH = 8
 STOCK_CODE_WIDTH = 6
+MANUAL_NO_BACKLOG_STOCK_CODES = {
+    "031990",  # 대선조선
+    "043360",  # 디지아이
+    "106080",  # 케이이엠텍
+    "277410",  # 인산가
+    "419530",  # SAMG엔터
+    "900340",  # 윙입푸드
+}
 MANUAL_NO_BACKLOG_SIGNAL_COMPANIES = {
     "BNK금융지주",
     "DB손해보험",
@@ -363,6 +371,16 @@ def _normalize_result_frame(df: pd.DataFrame) -> pd.DataFrame:
         normalized["corp_code"] = normalized["corp_code"].map(_normalize_corp_code)
     if "stock_code" in normalized.columns:
         normalized["stock_code"] = normalized["stock_code"].map(_normalize_stock_code)
+    manual_mask = normalized["stock_code"].isin(MANUAL_NO_BACKLOG_STOCK_CODES)
+    if manual_mask.any():
+        normalized.loc[manual_mask, "has_backlog_keyword"] = False
+        normalized.loc[manual_mask, "has_backlog_total"] = False
+        normalized.loc[manual_mask, "latest_total_period"] = None
+        normalized.loc[manual_mask, "latest_total_eok"] = None
+        normalized.loc[manual_mask, "status"] = "manual_no_backlog"
+        normalized.loc[manual_mask, "match_count"] = 0
+        normalized.loc[manual_mask, "matched_filing_count"] = 0
+        normalized.loc[manual_mask, "total_count"] = 0
     normalized = normalized.dropna(subset=["corp_code"])
     normalized = normalized.drop_duplicates(subset=["corp_code"], keep="last")
     return normalized[RESULT_COLUMNS]

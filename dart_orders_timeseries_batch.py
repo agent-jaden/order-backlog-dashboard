@@ -50,6 +50,15 @@ AGGREGATE_COLUMNS = [
     "yoy_change_pct",
 ]
 
+MANUAL_NO_BACKLOG_STOCK_CODES = {
+    "031990",  # 대선조선
+    "043360",  # 디지아이
+    "106080",  # 케이이엠텍
+    "277410",  # 인산가
+    "419530",  # SAMG엔터
+    "900340",  # 윙입푸드
+}
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -287,6 +296,7 @@ def _load_target_companies(classification_csv: Path) -> pd.DataFrame:
     target_df = df.loc[df["has_backlog_total"].fillna(False)].copy()
     target_df["corp_code"] = target_df["corp_code"].astype(str).str.zfill(8)
     target_df["stock_code"] = target_df["stock_code"].astype(str).str.zfill(6)
+    target_df = target_df.loc[~target_df["stock_code"].isin(MANUAL_NO_BACKLOG_STOCK_CODES)].copy()
     target_df = target_df[["corp_code", "corp_name", "stock_code"]].drop_duplicates()
     target_df = target_df.sort_values(["corp_name", "stock_code"]).reset_index(drop=True)
     return target_df

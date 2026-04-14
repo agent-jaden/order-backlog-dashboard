@@ -1,10 +1,4 @@
 ﻿corp_code,corp_name,stock_code,status,message,filings_found,filings_scanned,filings_skipped,time_series_rows,markdown_path,cache_csv_path,updated_at
-01082418,SAMG엔터,419530,error,No order backlog totals could be extracted from the requested filings.,0,0,0,0,outputs\수주잔고\SAMG엔터_수주잔고(419530).md,outputs\.timeseries_cache\01082418.csv,2026-04-14 10:43:22
-00110307,대선조선,031990,error,No order backlog totals could be extracted from the requested filings.,0,0,0,0,outputs\수주잔고\대선조선_수주잔고(031990).md,outputs\.timeseries_cache\00110307.csv,2026-04-14 10:45:09
-00295547,디지아이,043360,error,No order backlog totals could be extracted from the requested filings.,0,0,0,0,outputs\수주잔고\디지아이_수주잔고(043360).md,outputs\.timeseries_cache\00295547.csv,2026-04-14 10:46:17
-01328639,윙입푸드,900340,error,No order backlog totals could be extracted from the requested filings.,0,0,0,0,outputs\수주잔고\윙입푸드_수주잔고(900340).md,outputs\.timeseries_cache\01328639.csv,2026-04-14 10:51:43
-01243161,인산가,277410,error,No order backlog totals could be extracted from the requested filings.,0,0,0,0,outputs\수주잔고\인산가_수주잔고(277410).md,outputs\.timeseries_cache\01243161.csv,2026-04-14 10:52:34
-00542898,케이이엠텍,106080,error,No order backlog totals could be extracted from the requested filings.,0,0,0,0,outputs\수주잔고\케이이엠텍_수주잔고(106080).md,outputs\.timeseries_cache\00542898.csv,2026-04-14 10:53:49
 00378363,3S,060310,success,,17,17,0,11,outputs\수주잔고\3S_수주잔고(060310).md,outputs\.timeseries_cache\00378363.csv,2026-04-14 10:41:46
 00296078,APS,054620,success,,17,13,4,1,outputs\수주잔고\APS_수주잔고(054620).md,outputs\.timeseries_cache\00296078.csv,2026-04-14 10:41:47
 01203808,AP시스템,265520,success,,17,17,0,17,outputs\수주잔고\AP시스템_수주잔고(265520).md,outputs\.timeseries_cache\01203808.csv,2026-04-14 10:41:47
