@@ -56,7 +56,11 @@ def _export_company_pages() -> None:
 
 
 def _write_companies_index() -> None:
-    company_files = sorted(COMPANIES_DIR.glob("*.md"))
+    company_files = sorted(
+        file_path
+        for file_path in COMPANIES_DIR.glob("*.md")
+        if not file_path.name.startswith("_수주잔고(")
+    )
     lines = [
         "# 기업별 문서 목록",
         "",
