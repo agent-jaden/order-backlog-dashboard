@@ -1,4 +1,4 @@
-﻿# 수주잔고 대시보드
+# 수주잔고 대시보드
 
 - 기준 데이터: `outputs/수주잔고/수주잔고_전체시계열.csv`
 - 기준 범위: `2025년 1분기 ~ 2025년 4분기`
@@ -66,8 +66,8 @@
 </thead>
 <tbody>
 <tr><td>1</td><td><a href="../companies/한화_수주잔고(000880)/">한화</a></td><td>1,388,605.95</td><td>11.41%</td><td>10.57%</td></tr>
-<tr><td>2</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>2.94%</td><td>129,945.51%</td></tr>
-<tr><td>3</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>2.94%</td><td>-1.52%</td></tr>
+<tr><td>2</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>2.94%</td><td>-1.52%</td></tr>
+<tr><td>3</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>2.94%</td><td>129,945.51%</td></tr>
 <tr><td>4</td><td><a href="../companies/금양_수주잔고(001570)/">금양</a></td><td>579,000</td><td>0.00%</td><td>0.00%</td></tr>
 <tr><td>5</td><td><a href="../companies/HD현대중공업_수주잔고(329180)/">HD현대중공업</a></td><td>563,844.72</td><td>25.25%</td><td>20.14%</td></tr>
 <tr><td>6</td><td><a href="../companies/대우건설_수주잔고(047040)/">대우건설</a></td><td>505,968.18</td><td>3.67%</td><td>13.85%</td></tr>
@@ -206,13 +206,11 @@
 <tr><td>2</td><td><a href="../companies/HLB이노베이션_수주잔고(024850)/">HLB이노베이션</a></td><td>0.03</td><td>4</td><td>12,021.96%</td><td>0.03</td></tr>
 <tr><td>3</td><td><a href="../companies/제이티_수주잔고(089790)/">제이티</a></td><td>292.99</td><td>4</td><td>74.04%</td><td>124.64</td></tr>
 <tr><td>4</td><td><a href="../companies/닷밀_수주잔고(464580)/">닷밀</a></td><td>90.12</td><td>3</td><td>553.99%</td><td>76.34</td></tr>
-<tr><td>5</td><td><a href="../companies/한국공항_수주잔고(005430)/">한국공항</a></td><td>5,865.47</td><td>3</td><td>36.52%</td><td>1,569.14</td></tr>
-<tr><td>6</td><td><a href="../companies/하이록코리아_수주잔고(013030)/">하이록코리아</a></td><td>3,861.6</td><td>3</td><td>36.28%</td><td>1,028.12</td></tr>
-<tr><td>7</td><td><a href="../companies/스피어_수주잔고(347700)/">스피어</a></td><td>576.35</td><td>3</td><td>32.36%</td><td>140.9</td></tr>
-<tr><td>8</td><td><a href="../companies/시알홀딩스_수주잔고(000480)/">시알홀딩스</a></td><td>0.01</td><td>3</td><td>31.58%</td><td>0</td></tr>
-<tr><td>9</td><td><a href="../companies/케일럼_수주잔고(258610)/">케일럼</a></td><td>235.14</td><td>3</td><td>30.07%</td><td>54.35</td></tr>
-<tr><td>10</td><td><a href="../companies/삼화전자공업_수주잔고(011230)/">삼화전자공업</a></td><td>74.02</td><td>3</td><td>28.95%</td><td>16.62</td></tr>
-<tr><td>11</td><td><a href="../companies/디아이씨_수주잔고(092200)/">디아이씨</a></td><td>7,573.1</td><td>3</td><td>28.68%</td><td>1,687.75</td></tr>
+<tr><td>5</td><td><a href="../companies/스피어_수주잔고(347700)/">스피어</a></td><td>576.35</td><td>3</td><td>32.36%</td><td>140.9</td></tr>
+<tr><td>6</td><td><a href="../companies/시알홀딩스_수주잔고(000480)/">시알홀딩스</a></td><td>0.01</td><td>3</td><td>31.58%</td><td>0</td></tr>
+<tr><td>7</td><td><a href="../companies/케일럼_수주잔고(258610)/">케일럼</a></td><td>235.14</td><td>3</td><td>30.07%</td><td>54.35</td></tr>
+<tr><td>8</td><td><a href="../companies/삼화전자공업_수주잔고(011230)/">삼화전자공업</a></td><td>74.02</td><td>3</td><td>28.95%</td><td>16.62</td></tr>
+<tr><td>9</td><td><a href="../companies/디아이씨_수주잔고(092200)/">디아이씨</a></td><td>7,573.1</td><td>3</td><td>28.68%</td><td>1,687.75</td></tr>
 </tbody>
 </table>
 
@@ -502,8 +500,8 @@
 <tbody>
 <tr><td>1</td><td><a href="../companies/한화_수주잔고(000880)/">한화</a></td><td>1,221,964.81</td><td>-2.82%</td><td>34.81%</td></tr>
 <tr><td>2</td><td><a href="../companies/한화에어로스페이스_수주잔고(012450)/">한화에어로스페이스</a></td><td>1,016,517.53</td><td>-2.33%</td><td>50.08%</td></tr>
-<tr><td>3</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>814,424.77</td><td>-3.10%</td><td>3.73%</td></tr>
-<tr><td>4</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>814,424.77</td><td>185,101.77%</td><td>38,285.66%</td></tr>
+<tr><td>3</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>814,424.77</td><td>185,101.77%</td><td>38,285.66%</td></tr>
+<tr><td>4</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>814,424.77</td><td>-3.10%</td><td>3.73%</td></tr>
 <tr><td>5</td><td><a href="../companies/금양_수주잔고(001570)/">금양</a></td><td>579,000</td><td>0.00%</td><td>-</td></tr>
 <tr><td>6</td><td><a href="../companies/HD현대중공업_수주잔고(329180)/">HD현대중공업</a></td><td>463,442.47</td><td>-6.63%</td><td>0.03%</td></tr>
 <tr><td>7</td><td><a href="../companies/대우건설_수주잔고(047040)/">대우건설</a></td><td>449,933.03</td><td>-0.04%</td><td>0.01%</td></tr>
@@ -862,4 +860,3 @@
 - 순위는 자동 추출된 시계열 기준으로 계산합니다.
 - 증감률은 분모가 매우 작은 경우 과도하게 커질 수 있습니다.
 - 실제 해석 전에는 개별 기업 문서와 원문 공시를 함께 확인하는 편이 안전합니다.
-

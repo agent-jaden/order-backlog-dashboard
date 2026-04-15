@@ -618,20 +618,6 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
     total_df = df.loc[total_mask & df["amount_krw"].notna()].copy()
 
     if total_df.empty:
-        table_backed = df.loc[df["source_priority"] <= 2].copy()
-        amount_like = table_backed.loc[~table_backed["matched_text"].fillna("").str.contains("수량", na=False)].copy()
-        amount_like = amount_like.dropna(subset=["amount_krw"])
-        if not amount_like.empty:
-            total_df = amount_like.groupby(["filing_date", "report_name"], as_index=False)["amount_krw"].sum()
-            total_df["amount_eok"] = total_df["amount_krw"].map(_to_eok_value)
-            total_df["amount_display"] = total_df["amount_eok"].map(_format_eok)
-            total_df["report_period"] = total_df["report_name"].map(_extract_report_period)
-            total_df["raw_value"] = None
-            total_df["unit"] = None
-            total_df["matched_text"] = None
-            total_df["source_kind"] = "aggregated"
-            return total_df[expected_columns]
-
         row_counts = df.groupby(["filing_date", "report_name"]).size().rename("row_count").reset_index()
         single_rows = row_counts.loc[row_counts["row_count"] == 1, ["filing_date", "report_name"]]
         total_df = df.merge(single_rows, on=["filing_date", "report_name"], how="inner")
