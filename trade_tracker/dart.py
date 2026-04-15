@@ -812,6 +812,7 @@ def _extract_from_tables(content: str) -> list[OrderBacklogMatch]:
         prior_context = content[context_start:table_match.start()]
         unit = _infer_backlog_unit(
             content,
+            table_context=table_block,
             table_text=" ".join(cell for row in normalized_rows for cell in row if cell),
             local_context=prior_context,
             inherited_unit=current_unit,
@@ -823,6 +824,7 @@ def _extract_from_tables(content: str) -> list[OrderBacklogMatch]:
                 content,
                 normalized_rows,
                 source_kind="table",
+                table_context=table_block,
                 local_context=prior_context,
                 inherited_unit=unit,
             )
@@ -960,7 +962,7 @@ def _extract_text_snippets(content: str) -> list[OrderBacklogMatch]:
         number = _pick_largest_number(snippet)
         if number is None:
             continue
-        unit = _infer_backlog_unit(content, table_text=snippet, local_context=snippet)
+        unit = _infer_backlog_unit(content, table_context=snippet, table_text=snippet, local_context=snippet)
         snippets.append(
             OrderBacklogMatch(
                 receipt_no="",
@@ -976,7 +978,11 @@ def _extract_text_snippets(content: str) -> list[OrderBacklogMatch]:
             )
         )
 
-    summary_match = _extract_backlog_summary_from_text(text, lines, _infer_backlog_unit(content, table_text=text, local_context=text))
+    summary_match = _extract_backlog_summary_from_text(
+        text,
+        lines,
+        _infer_backlog_unit(content, table_context=text, table_text=text, local_context=text),
+    )
     if summary_match is not None:
         if not any(
             item.raw_value == summary_match.raw_value and item.matched_text == summary_match.matched_text
@@ -1121,12 +1127,14 @@ def _source_priority(source_kind: str | None) -> int:
 def _infer_backlog_unit(
     content: str,
     *,
+    table_context: str = "",
     table_text: str = "",
     local_context: str = "",
     inherited_unit: str | None = None,
 ) -> str | None:
     return (
-        _detect_unit(table_text, loose=False)
+        _detect_nearest_unit(table_context, loose=True)
+        or _detect_unit(table_text, loose=False)
         or _detect_nearest_unit(local_context, loose=False)
         or inherited_unit
         or _detect_document_unit(content)
@@ -1138,6 +1146,7 @@ def _extract_backlog_matches_from_rows(
     normalized_rows: list[list[str]],
     *,
     source_kind: str,
+    table_context: str = "",
     local_context: str = "",
     inherited_unit: str | None = None,
 ) -> list[OrderBacklogMatch]:
@@ -1147,6 +1156,7 @@ def _extract_backlog_matches_from_rows(
     table_text = " ".join(cell for row in normalized_rows for cell in row if cell)
     unit = _infer_backlog_unit(
         content,
+        table_context=table_context or table_text,
         table_text=table_text,
         local_context=local_context or table_text,
         inherited_unit=inherited_unit,
@@ -1192,7 +1202,7 @@ def _extract_from_sales_and_orders_section(content: str) -> list[OrderBacklogMat
         return []
 
     section_text = " ".join(section.itertext())
-    section_unit = _infer_backlog_unit(content, table_text=section_text, local_context=section_text)
+    section_unit = _infer_backlog_unit(content, table_context=section_text, table_text=section_text, local_context=section_text)
     matches: list[OrderBacklogMatch] = []
 
     for table in section.iter("TABLE"):
@@ -1205,6 +1215,7 @@ def _extract_from_sales_and_orders_section(content: str) -> list[OrderBacklogMat
                 content,
                 normalized_rows,
                 source_kind="section_table",
+                table_context=section_text,
                 local_context=section_text,
                 inherited_unit=section_unit,
             )
@@ -1231,6 +1242,7 @@ def _extract_from_xml_tables(content: str) -> list[OrderBacklogMatch]:
         prior_context = content[context_start:table_match.start()]
         unit = _infer_backlog_unit(
             content,
+            table_context=table_block,
             table_text=" ".join(cell for row in normalized_rows for cell in row if cell),
             local_context=prior_context,
             inherited_unit=current_unit,
@@ -1242,6 +1254,7 @@ def _extract_from_xml_tables(content: str) -> list[OrderBacklogMatch]:
                 content,
                 normalized_rows,
                 source_kind="xml_table",
+                table_context=table_block,
                 local_context=prior_context,
                 inherited_unit=unit,
             )
