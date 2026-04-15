@@ -1,4 +1,4 @@
-# 수주잔고 대시보드
+﻿# 수주잔고 대시보드
 
 - 기준 데이터: `outputs/수주잔고/수주잔고_전체시계열.csv`
 - 기준 범위: `2025년 1분기 ~ 2025년 4분기`
@@ -66,8 +66,8 @@
 </thead>
 <tbody>
 <tr><td>1</td><td><a href="../companies/한화_수주잔고(000880)/">한화</a></td><td>1,388,605.95</td><td>11.41%</td><td>10.57%</td></tr>
-<tr><td>2</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>2.94%</td><td>-1.52%</td></tr>
-<tr><td>3</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>2.94%</td><td>129,945.51%</td></tr>
+<tr><td>2</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>2.94%</td><td>129,945.51%</td></tr>
+<tr><td>3</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>2.94%</td><td>-1.52%</td></tr>
 <tr><td>4</td><td><a href="../companies/금양_수주잔고(001570)/">금양</a></td><td>579,000</td><td>0.00%</td><td>0.00%</td></tr>
 <tr><td>5</td><td><a href="../companies/HD현대중공업_수주잔고(329180)/">HD현대중공업</a></td><td>563,844.72</td><td>25.25%</td><td>20.14%</td></tr>
 <tr><td>6</td><td><a href="../companies/대우건설_수주잔고(047040)/">대우건설</a></td><td>505,968.18</td><td>3.67%</td><td>13.85%</td></tr>
@@ -90,11 +90,11 @@
 <tr><td>3</td><td><a href="../companies/HD현대중공업_수주잔고(329180)/">HD현대중공업</a></td><td>563,844.72</td><td>113,664.21</td><td>25.25%</td></tr>
 <tr><td>4</td><td><a href="../companies/한화오션_수주잔고(042660)/">한화오션</a></td><td>344,950.64</td><td>55,906.65</td><td>19.34%</td></tr>
 <tr><td>5</td><td><a href="../companies/엘에스일렉트릭_수주잔고(010120)/">엘에스일렉트릭</a></td><td>50,154</td><td>49,854</td><td>16,618.00%</td></tr>
-<tr><td>6</td><td><a href="../companies/에스에너지_수주잔고(095910)/">에스에너지</a></td><td>58,120.25</td><td>43,742.78</td><td>304.25%</td></tr>
-<tr><td>7</td><td><a href="../companies/LIG넥스원_수주잔고(079550)/">LIG넥스원</a></td><td>262,526</td><td>28,226</td><td>12.05%</td></tr>
-<tr><td>8</td><td><a href="../companies/아이엠티_수주잔고(451220)/">아이엠티</a></td><td>27,420</td><td>27,419.97</td><td>99,999,900.00%</td></tr>
-<tr><td>9</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>23,463.73</td><td>2.94%</td></tr>
-<tr><td>10</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>23,463.73</td><td>2.94%</td></tr>
+<tr><td>6</td><td><a href="../companies/LIG넥스원_수주잔고(079550)/">LIG넥스원</a></td><td>262,526</td><td>28,226</td><td>12.05%</td></tr>
+<tr><td>7</td><td><a href="../companies/아이엠티_수주잔고(451220)/">아이엠티</a></td><td>27,420</td><td>27,419.97</td><td>99,999,900.00%</td></tr>
+<tr><td>8</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>23,463.73</td><td>2.94%</td></tr>
+<tr><td>9</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>23,463.73</td><td>2.94%</td></tr>
+<tr><td>10</td><td><a href="../companies/GS건설_수주잔고(006360)/">GS건설</a></td><td>240,879.73</td><td>22,566.38</td><td>10.34%</td></tr>
 </tbody>
 </table>
 
@@ -862,3 +862,4 @@
 - 순위는 자동 추출된 시계열 기준으로 계산합니다.
 - 증감률은 분모가 매우 작은 경우 과도하게 커질 수 있습니다.
 - 실제 해석 전에는 개별 기업 문서와 원문 공시를 함께 확인하는 편이 안전합니다.
+

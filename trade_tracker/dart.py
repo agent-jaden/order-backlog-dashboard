@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from html.parser import HTMLParser
@@ -1132,13 +1132,31 @@ def _infer_backlog_unit(
     local_context: str = "",
     inherited_unit: str | None = None,
 ) -> str | None:
+    explicit_unit = _detect_explicit_backlog_unit(local_context) or _detect_explicit_backlog_unit(table_context)
     return (
-        _detect_nearest_unit(table_context, loose=True)
-        or _detect_unit(table_text, loose=False)
+        explicit_unit
         or _detect_nearest_unit(local_context, loose=False)
+        or _detect_nearest_unit(table_context, loose=True)
+        or _detect_unit(table_text, loose=False)
         or inherited_unit
         or _detect_document_unit(content)
     )
+
+
+def _detect_explicit_backlog_unit(text: str) -> str | None:
+    normalized = _compact_text(text)
+    marker = "\ub2e8\uc704"
+    units = ["\ubc31\ub9cc\uc6d0", "\ucc9c\uc6d0", "\uc5b5\uc6d0", "\ub9cc\uc6d0", "\uc6d0"]
+
+    marker_index = normalized.find(marker)
+    if marker_index < 0:
+        return None
+
+    window = normalized[marker_index : marker_index + 120]
+    for unit in units:
+        if unit in window:
+            return unit
+    return None
 
 
 def _extract_backlog_matches_from_rows(

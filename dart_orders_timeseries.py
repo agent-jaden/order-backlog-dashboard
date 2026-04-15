@@ -364,8 +364,6 @@ def _build_series_frame(total_df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]
     candidate_df = total_df.copy()
     candidate_df = candidate_df.sort_values(["report_period", "filing_date", "report_name"]).reset_index(drop=True)
     series_df, notes = _select_period_candidates(candidate_df)
-    series_df, normalization_notes = _normalize_outliers(series_df)
-    notes.extend(normalization_notes)
     series_df["amount_eok"] = series_df["amount_krw"].map(lambda value: value / 100_000_000 if pd.notna(value) else None)
     series_df["change_eok"] = series_df["amount_eok"].diff()
     series_df["change_pct"] = series_df["amount_eok"].pct_change() * 100
@@ -421,119 +419,9 @@ def _select_period_candidates(candidate_df: pd.DataFrame) -> tuple[pd.DataFrame,
             continue
 
         current = selected_rows[index]
-        replacement, reason = _choose_better_period_candidate(selected_rows, index, group)
-        if replacement is not None and replacement["filing_date"] != current["filing_date"]:
-            selected_rows[index] = replacement.copy()
-            notes.append(
-                f"`{period}` 기간은 중복 공시 {len(group)}건 중 "
-                f"`{current['filing_date']} {current['report_name']}` 대신 "
-                f"`{replacement['filing_date']} {replacement['report_name']}` 를 사용했습니다. 이유: {reason}."
-            )
-        else:
-            notes.append(
-                f"`{period}` 기간은 중복 공시 {len(group)}건이 있어 "
-                f"최신 공시인 `{current['filing_date']} {current['report_name']}` 를 사용했습니다."
-            )
-
     result_df = pd.DataFrame(selected_rows)
     result_df = result_df.sort_values("report_period").reset_index(drop=True)
     return result_df, notes
-
-
-def _choose_better_period_candidate(
-    selected_rows: list[pd.Series],
-    index: int,
-    group: pd.DataFrame,
-) -> tuple[pd.Series | None, str]:
-    current = selected_rows[index]
-    previous_amount = _neighbor_amount(selected_rows, index - 1)
-    next_amount = _neighbor_amount(selected_rows, index + 1)
-    if previous_amount is None or next_amount is None:
-        return None, ""
-
-    current_amount = float(current["amount_krw"])
-    if not _is_clear_outlier(current_amount, previous_amount, next_amount):
-        return None, ""
-
-    target_amount = (previous_amount + next_amount) / 2
-    best_row = min(group.itertuples(index=False), key=lambda row: abs(float(row.amount_krw) - target_amount))
-    if float(best_row.amount_krw) == current_amount:
-        return None, ""
-    return pd.Series(best_row._asdict()), "주변 분기 대비 급격한 이상치 완화"
-
-
-def _normalize_outliers(series_df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
-    normalized_df = series_df.copy()
-    normalized_df["amount_krw"] = pd.to_numeric(normalized_df["amount_krw"], errors="coerce").astype(float)
-    notes: list[str] = []
-    normalized_df, pair_notes = _normalize_outlier_pairs(normalized_df)
-    notes.extend(pair_notes)
-
-    for index in range(len(normalized_df)):
-        current_amount = _neighbor_amount_from_frame(normalized_df, index)
-        previous_amount = _neighbor_amount_from_frame(normalized_df, index - 1)
-        next_amount = _neighbor_amount_from_frame(normalized_df, index + 1)
-        if current_amount is None or previous_amount is None or next_amount is None:
-            continue
-        if not _is_clear_outlier(current_amount, previous_amount, next_amount):
-            continue
-
-        replacement, factor = _rescaled_amount(current_amount, previous_amount, next_amount)
-        period = normalized_df.at[index, "report_period"]
-        filing_label = f"{normalized_df.at[index, 'filing_date']} {normalized_df.at[index, 'report_name']}"
-        if replacement is not None and factor is not None:
-            normalized_df.at[index, "amount_krw"] = replacement
-            notes.append(
-                f"`{period}` (`{filing_label}`) 값은 주변 분기와 비교해 단위 오인 가능성이 커서 "
-                f"`x{factor:g}` 보정을 적용했습니다."
-            )
-            continue
-
-        normalized_df.at[index, "amount_krw"] = pd.NA
-        notes.append(
-            f"`{period}` (`{filing_label}`) 값은 주변 분기 대비 이상치로 판단되어 자동 제외했습니다."
-        )
-
-    return normalized_df, notes
-
-
-def _normalize_outlier_pairs(series_df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
-    normalized_df = series_df.copy()
-    notes: list[str] = []
-
-    for index in range(1, len(normalized_df) - 2):
-        previous_amount = _neighbor_amount_from_frame(normalized_df, index - 1)
-        current_amount = _neighbor_amount_from_frame(normalized_df, index)
-        next_amount = _neighbor_amount_from_frame(normalized_df, index + 1)
-        following_amount = _neighbor_amount_from_frame(normalized_df, index + 2)
-        if None in (previous_amount, current_amount, next_amount, following_amount):
-            continue
-
-        lower_bound = min(previous_amount, following_amount)
-        upper_bound = max(previous_amount, following_amount)
-        if lower_bound <= 0:
-            continue
-        if not (
-            current_amount < lower_bound * 0.2
-            and next_amount < lower_bound * 0.2
-            or current_amount > upper_bound * 5
-            and next_amount > upper_bound * 5
-        ):
-            continue
-
-        factor = _best_pair_scale_factor(previous_amount, current_amount, next_amount, following_amount)
-        if factor is None:
-            continue
-
-        normalized_df.at[index, "amount_krw"] = current_amount * factor
-        normalized_df.at[index + 1, "amount_krw"] = next_amount * factor
-        first_label = f"{normalized_df.at[index, 'report_period']} ({normalized_df.at[index, 'filing_date']} {normalized_df.at[index, 'report_name']})"
-        second_label = f"{normalized_df.at[index + 1, 'report_period']} ({normalized_df.at[index + 1, 'filing_date']} {normalized_df.at[index + 1, 'report_name']})"
-        notes.append(
-            f"`{first_label}` 와 `{second_label}` 값은 연속 분기 단위 오인 가능성이 커서 `x{factor:g}` 보정을 적용했습니다."
-        )
-
-    return normalized_df, notes
 
 
 def _build_yoy_changes(series_df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
@@ -568,93 +456,6 @@ def _build_yoy_changes(series_df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
             yoy_change_pct_values.append((yoy_change / float(previous_amount)) * 100)
 
     return pd.Series(yoy_change_values), pd.Series(yoy_change_pct_values)
-
-
-def _neighbor_amount(selected_rows: list[pd.Series], index: int) -> float | None:
-    if index < 0 or index >= len(selected_rows):
-        return None
-    value = selected_rows[index].get("amount_krw")
-    if pd.isna(value):
-        return None
-    return float(value)
-
-
-def _neighbor_amount_from_frame(frame: pd.DataFrame, index: int) -> float | None:
-    if index < 0 or index >= len(frame):
-        return None
-    value = frame.at[index, "amount_krw"]
-    if pd.isna(value):
-        return None
-    return float(value)
-
-
-def _rescaled_amount(current: float, previous: float, following: float) -> tuple[float | None, float | None]:
-    target_amount = (previous + following) / 2
-    candidate_factors = [10, 100, 1000, 10000, 0.1, 0.01, 0.001, 0.0001]
-    current_distance = abs(current - target_amount)
-    best_amount = None
-    best_factor = None
-    best_distance = current_distance
-
-    for factor in candidate_factors:
-        candidate_amount = current * factor
-        candidate_distance = abs(candidate_amount - target_amount)
-        if candidate_distance >= best_distance:
-            continue
-        if _is_clear_outlier(candidate_amount, previous, following):
-            continue
-        best_amount = candidate_amount
-        best_factor = factor
-        best_distance = candidate_distance
-
-    if best_amount is None:
-        return None, None
-    if current_distance <= 0:
-        return None, None
-    if best_distance > current_distance * 0.2:
-        return None, None
-    return best_amount, best_factor
-
-
-def _best_pair_scale_factor(
-    previous: float,
-    current: float,
-    following: float,
-    next_anchor: float,
-) -> float | None:
-    candidate_factors = [10, 100, 1000, 10000, 0.1, 0.01, 0.001, 0.0001]
-    target_first = (previous + next_anchor) / 2
-    target_second = (previous + next_anchor) / 2
-    current_distance = abs(current - target_first) + abs(following - target_second)
-    best_factor = None
-    best_distance = current_distance
-
-    for factor in candidate_factors:
-        scaled_first = current * factor
-        scaled_second = following * factor
-        candidate_distance = abs(scaled_first - target_first) + abs(scaled_second - target_second)
-        if candidate_distance >= best_distance:
-            continue
-        if _is_clear_outlier(scaled_first, previous, next_anchor):
-            continue
-        if _is_clear_outlier(scaled_second, previous, next_anchor):
-            continue
-        best_factor = factor
-        best_distance = candidate_distance
-
-    if best_factor is None:
-        return None
-    if best_distance > current_distance * 0.2:
-        return None
-    return best_factor
-
-
-def _is_clear_outlier(current: float, previous: float, following: float) -> bool:
-    lower_bound = min(previous, following)
-    upper_bound = max(previous, following)
-    if lower_bound <= 0:
-        return False
-    return current < lower_bound * 0.2 or current > upper_bound * 5
 
 
 def _timeseries_to_markdown(
