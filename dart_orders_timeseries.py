@@ -3,8 +3,10 @@ from __future__ import annotations
 import argparse
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
+import yaml
 from dotenv import load_dotenv
 
 from trade_tracker.config import get_settings
@@ -207,14 +209,16 @@ def _can_build_manual_segmented_series(match_df: pd.DataFrame) -> bool:
 
 
 def _build_timeseries_total_summary(match_df: pd.DataFrame, stock_code: str | None = None) -> tuple[pd.DataFrame, list[str]]:
-    total_df = build_total_summary(match_df, stock_code=stock_code)
-    if total_df.empty:
-        return total_df, []
-    return total_df, []
-
-    candidate_df = _build_total_candidates(match_df)
-    if candidate_df.empty:
-        return total_df, []
+    if match_df.empty:
+        return pd.DataFrame(), []
+    result_frames = []
+    for _, group in match_df.groupby(["filing_date", "report_name"], sort=False):
+        summary = build_total_summary(group.copy(), stock_code=stock_code)
+        if not summary.empty:
+            result_frames.append(summary)
+    if not result_frames:
+        return pd.DataFrame(), []
+    return pd.concat(result_frames, ignore_index=True), []
 
     notes: list[str] = []
     corrected_rows = []
@@ -284,32 +288,53 @@ def _apply_manual_match_filters(
     return filtered_df, notes + [note]
 
 
+_OVERRIDES_CACHE: list[dict[str, Any]] | None = None
+_OVERRIDES_PATH = Path(__file__).parent / "config" / "manual_backlog_overrides.yaml"
+
+
+def _load_overrides() -> list[dict[str, Any]]:
+    global _OVERRIDES_CACHE
+    if _OVERRIDES_CACHE is not None:
+        return _OVERRIDES_CACHE
+    if not _OVERRIDES_PATH.exists():
+        _OVERRIDES_CACHE = []
+        return _OVERRIDES_CACHE
+    with _OVERRIDES_PATH.open(encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    _OVERRIDES_CACHE = data.get("overrides", [])
+    return _OVERRIDES_CACHE
+
+
 def _apply_manual_timeseries_overrides(
     total_df: pd.DataFrame,
     corp_name: str,
     stock_code: str | None,
 ) -> tuple[pd.DataFrame, list[str]]:
-    if total_df.empty or stock_code != "044180":
+    if total_df.empty or not stock_code:
         return total_df, []
 
-    overrides = {
-        ("2025.03", "분기보고서 (2025.03)"): 434.0,
-        ("2025.06", "반기보고서 (2025.06)"): 462.0,
-        ("2025.09", "[기재정정]분기보고서 (2025.09)"): 426.0,
-    }
+    entries = [e for e in _load_overrides() if str(e.get("stock_code", "")).zfill(6) == stock_code.zfill(6)]
+    if not entries:
+        return total_df, []
 
     adjusted_df = total_df.copy()
     notes: list[str] = []
-    for (report_period, report_name), amount_eok in overrides.items():
-        mask = (adjusted_df["report_period"] == report_period) & (adjusted_df["report_name"] == report_name)
+    for entry in entries:
+        report_period = str(entry["report_period"])
+        amount_eok = float(entry["amount_eok"])
+        report_name = entry.get("report_name")
+        mask = adjusted_df["report_period"] == report_period
+        if report_name:
+            mask = mask & (adjusted_df["report_name"] == report_name)
         if not mask.any():
             continue
         amount_krw = int(amount_eok * 100_000_000)
         adjusted_df.loc[mask, "amount_krw"] = amount_krw
         adjusted_df.loc[mask, "amount_eok"] = amount_eok
         adjusted_df.loc[mask, "amount_display"] = _format_number(amount_eok)
+        label = report_name or report_period
         notes.append(
-            f"`{corp_name}` `{report_name}` (`{report_period}`) 은 보고서 단위 오류 예외로 "
+            f"`{corp_name}` `{label}` (`{report_period}`) 은 수동 오버라이드로 "
             f"수주잔고를 `{_format_number(amount_eok)}`억원으로 고정했습니다."
         )
 
@@ -509,22 +534,22 @@ def _timeseries_to_markdown(
     backlog_label: str = "\uc218\uc8fc\uc794\uace0",
 ) -> str:
     latest_row = series_df.dropna(subset=["amount_eok"]).iloc[-1]
-    lines = [f"# {company_name} {backlog_label} Change", ""]
-    lines.append(f"- Stock code: `{stock_code}`")
-    lines.append(f"- Date range: `{start_date}` ~ `{end_date}`")
-    lines.append(f"- Rows: `{len(series_df)}`")
-    lines.append(f"- Latest period: `{latest_row['report_period']}`")
-    lines.append(f"- Latest {backlog_label}: `{latest_row['amount_display']}` ??")
+    lines = [f"# {company_name} 분기별 {backlog_label} 변화", ""]
+    lines.append(f"- 종목코드: `{stock_code}`")
+    lines.append(f"- 기준 기간: `{start_date}` ~ `{end_date}`")
+    lines.append(f"- 추출 건수: `{len(series_df)}`")
+    lines.append(f"- 최신 기간: `{latest_row['report_period']}`")
+    lines.append(f"- 최신 {backlog_label}: `{latest_row['amount_display']}` 억원")
     lines.append("")
     if notes:
-        lines.append("## Notes")
+        lines.append("## 참고")
         lines.append("")
         for note in notes:
             lines.append(f"- {note}")
         lines.append("")
-    lines.append("## Series")
+    lines.append("## 시계열 표")
     lines.append("")
-    lines.append(f"| Filing date | Report | Period | {backlog_label}(??) | QoQ change(??) | QoQ change % | YoY change(??) | YoY change % |")
+    lines.append(f"| 공시일 | 보고서 | 기간 | {backlog_label}(억원) | 전기 대비 증감(억원) | 전기 대비 증감률 | YoY 증감(억원) | YoY 증감률 |")
     lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |")
     for _, row in series_df.iterrows():
         lines.append(
@@ -544,12 +569,12 @@ def _timeseries_to_markdown(
             + " |"
         )
     lines.append("")
-    lines.append("## Summary")
+    lines.append("## 해석")
     lines.append("")
-    lines.append(f"- Values are extracted total {backlog_label} candidates converted to 억원.")
-    lines.append("- QoQ change is versus the prior valid quarter.")
-    lines.append("- YoY change is versus the same quarter a year ago.")
-    lines.append("- When there are multiple amended filings in the same period, the latest filing is used as the default, excluding manual anomaly corrections.")
+    lines.append(f"- 값은 각 정기보고서에서 추출된 총 {backlog_label} 후보를 `억원` 기준으로 환산한 값입니다.")
+    lines.append("- 전기 대비 증감은 직전 유효 분기 대비 변화입니다.")
+    lines.append("- YoY 증감은 전년 동기 대비 변화입니다.")
+    lines.append("- 같은 기간 정정공시가 여러 건이면 최신 공시를 기본으로 사용하되, 주변 분기 대비 명백한 이상치는 보정하거나 제외합니다.")
     lines.append("")
     return "\n".join(lines)
 
@@ -560,37 +585,37 @@ def _segmented_timeseries_to_markdown(
     segmented: dict[str, dict[str, object]],
     start_date: str,
     end_date: str,
-    backlog_label: str = "\uc218\uc8fc\uc794\uace0",
+    backlog_label: str = "수주잔고",
 ) -> str:
-    lines = [f"# {company_name} Segment {backlog_label} Change", ""]
-    lines.append(f"- Stock code: `{stock_code}`")
-    lines.append(f"- Date range: `{start_date}` ~ `{end_date}`")
+    lines = [f"# {company_name} 분기별 {backlog_label} 변화 (사업부문별)", ""]
+    lines.append(f"- 종목코드: `{stock_code}`")
+    lines.append(f"- 기준 기간: `{start_date}` ~ `{end_date}`")
     lines.append("")
 
-    for segment_name in ["?대┛?섍꼍", "?ъ깮?먮꼫吏"]:
+    for segment_name in ["클린환경", "재생에너지"]:
         segment = segmented[segment_name]
         series_df = segment["series_df"]
         notes = segment["notes"]
         lines.append(f"## {segment_name}")
         lines.append("")
         if series_df.empty:
-            lines.append("- No extracted rows.")
+            lines.append("- 추출된 행 없음.")
             lines.append("")
             continue
         latest_row = series_df.dropna(subset=["amount_eok"]).iloc[-1]
-        lines.append(f"- Rows: `{len(series_df)}`")
-        lines.append(f"- Latest period: `{latest_row['report_period']}`")
-        lines.append(f"- Latest {backlog_label}: `{latest_row['amount_display']}` ??")
+        lines.append(f"- 추출 건수: `{len(series_df)}`")
+        lines.append(f"- 최신 기간: `{latest_row['report_period']}`")
+        lines.append(f"- 최신 {backlog_label}: `{latest_row['amount_display']}` 억원")
         lines.append("")
         if notes:
-            lines.append("### Notes")
+            lines.append("### 참고")
             lines.append("")
             for note in notes:
                 lines.append(f"- {note}")
             lines.append("")
-        lines.append("### Series")
+        lines.append("### 시계열 표")
         lines.append("")
-        lines.append(f"| Filing date | Report | Period | {backlog_label}(??) | QoQ change(??) | QoQ change % | YoY change(??) | YoY change % |")
+        lines.append(f"| 공시일 | 보고서 | 기간 | {backlog_label}(억원) | 전기 대비 증감(억원) | 전기 대비 증감률 | YoY 증감(억원) | YoY 증감률 |")
         lines.append("| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |")
         for _, row in series_df.iterrows():
             lines.append(
@@ -611,11 +636,11 @@ def _segmented_timeseries_to_markdown(
             )
         lines.append("")
 
-    lines.append("## Summary")
+    lines.append("## 해석")
     lines.append("")
-    lines.append("- Each business segment is kept as a separate series.")
-    lines.append("- If a report has multiple candidates for the same segment, the most representative row is selected.")
-    lines.append(f"- Values are converted to 억원 for the business-segment {backlog_label}.")
+    lines.append("- 사업부문별로 분리된 시계열입니다.")
+    lines.append("- 동일 분기 내 복수 후보가 있으면 대표값을 선택합니다.")
+    lines.append(f"- 값은 `억원` 기준으로 환산한 사업부문별 {backlog_label}입니다.")
     lines.append("")
     return "\n".join(lines)
 

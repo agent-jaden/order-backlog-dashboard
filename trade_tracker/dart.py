@@ -672,7 +672,8 @@ def build_total_summary(df: pd.DataFrame, stock_code: str | None = None) -> pd.D
         total_terms.append("잔여기성")
     if stock_code == "094280":
         total_terms.append("수주총액")
-    total_mask = matched_text.map(lambda text: any(term in text for term in total_terms))
+    _terms_no_space = [t.replace(" ", "") for t in total_terms]
+    total_mask = matched_text.map(lambda text: any(term in text.replace(" ", "") for term in _terms_no_space))
     total_df = df.loc[total_mask & df["amount_krw"].notna()].copy()
 
     if total_df.empty:
@@ -1287,7 +1288,7 @@ def _infer_backlog_unit(
     local_context: str = "",
     inherited_unit: str | None = None,
 ) -> str | None:
-    explicit_unit = _detect_explicit_backlog_unit(local_context) or _detect_explicit_backlog_unit(table_context)
+    explicit_unit = _detect_explicit_backlog_unit(table_context) or _detect_explicit_backlog_unit(local_context)
     return (
         explicit_unit
         or _detect_nearest_unit(local_context, loose=False)
@@ -1303,13 +1304,14 @@ def _detect_explicit_backlog_unit(text: str) -> str | None:
     marker = "\ub2e8\uc704"
     units = ["\ubc31\ub9cc\uc6d0", "\ucc9c\uc6d0", "\uc5b5\uc6d0", "\ub9cc\uc6d0", "\uc6d0"]
 
-    marker_index = normalized.find(marker)
+    marker_index = normalized.rfind(marker)
     if marker_index < 0:
         return None
 
     window = normalized[marker_index : marker_index + 120]
+    window_no_space = window.replace(" ", "")
     for unit in units:
-        if unit in window:
+        if unit in window_no_space:
             return unit
     return None
 
