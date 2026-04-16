@@ -42,6 +42,7 @@ MANUAL_NO_BACKLOG_STOCK_CODES = {
     "277410",  # 인산가
     "419530",  # SAMG엔터
     "900340",  # 윙입푸드
+    "005430",  # 한국공항
 }
 MANUAL_NO_BACKLOG_SIGNAL_COMPANIES = {
     "BNK금융지주",
