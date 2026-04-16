@@ -172,7 +172,7 @@
 00113207,대한전선,001440,success,,17,17,0,17,outputs\수주잔고\대한전선_수주잔고(001440).md,outputs\.timeseries_cache\00113207.csv,2026-04-16 17:05:02
 00182696,대한조선,439260,success,,3,3,0,3,outputs\수주잔고\대한조선_수주잔고(439260).md,outputs\.timeseries_cache\00182696.csv,2026-04-16 17:05:02
 00113526,대한항공,003490,success,,17,17,0,16,outputs\수주잔고\대한항공_수주잔고(003490).md,outputs\.timeseries_cache\00113526.csv,2026-04-16 17:05:03
-00428729,대호에이엘,069460,success,,17,17,0,17,outputs\수주잔고\대호에이엘_수주잔고(069460).md,outputs\.timeseries_cache\00428729.csv,2026-04-16 17:05:03
+00428729,대호에이엘,069460,success,,17,17,0,17,outputs\수주잔고\대호에이엘_수주잔고(069460).md,outputs\.timeseries_cache\00428729.csv,2026-04-16 21:51:18
 00172291,더존비즈온,012510,success,,17,17,0,17,outputs\수주잔고\더존비즈온_수주잔고(012510).md,outputs\.timeseries_cache\00172291.csv,2026-04-16 17:05:04
 00530413,더코디,224060,success,,17,17,0,17,outputs\수주잔고\더코디_수주잔고(224060).md,outputs\.timeseries_cache\00530413.csv,2026-04-16 17:05:04
 01061558,덕산네오룩스,213420,success,,17,17,0,4,outputs\수주잔고\덕산네오룩스_수주잔고(213420).md,outputs\.timeseries_cache\01061558.csv,2026-04-16 17:05:05
@@ -361,7 +361,7 @@
 00762377,씨앗,103660,success,,12,5,7,5,outputs\수주잔고\씨앗_수주잔고(103660).md,outputs\.timeseries_cache\00762377.csv,2026-04-16 17:06:42
 00670340,씨에스윈드,112610,success,,17,17,0,17,outputs\수주잔고\씨에스윈드_수주잔고(112610).md,outputs\.timeseries_cache\00670340.csv,2026-04-16 17:06:42
 01487446,씨엔알리서치,359090,success,,17,17,0,17,outputs\수주잔고\씨엔알리서치_수주잔고(359090).md,outputs\.timeseries_cache\01487446.csv,2026-04-16 17:06:43
-00660033,씨엔플러스,115530,success,,20,17,3,17,outputs\수주잔고\씨엔플러스_수주잔고(115530).md,outputs\.timeseries_cache\00660033.csv,2026-04-16 17:06:43
+00660033,씨엔플러스,115530,success,,20,17,3,17,outputs\수주잔고\씨엔플러스_수주잔고(115530).md,outputs\.timeseries_cache\00660033.csv,2026-04-16 21:51:20
 00991298,씨이랩,189330,success,,17,17,0,17,outputs\수주잔고\씨이랩_수주잔고(189330).md,outputs\.timeseries_cache\00991298.csv,2026-04-16 17:06:44
 01210677,씨케이솔루션,480370,success,,5,5,0,5,outputs\수주잔고\씨케이솔루션_수주잔고(480370).md,outputs\.timeseries_cache\01210677.csv,2026-04-16 17:06:44
 00442145,아바코,083930,success,,17,17,0,17,outputs\수주잔고\아바코_수주잔고(083930).md,outputs\.timeseries_cache\00442145.csv,2026-04-16 17:06:44
@@ -474,7 +474,7 @@
 00833064,엠플러스,259630,success,,17,17,0,17,outputs\수주잔고\엠플러스_수주잔고(259630).md,outputs\.timeseries_cache\00833064.csv,2026-04-16 17:07:35
 00766106,엣지파운드리,105550,success,,17,17,0,5,outputs\수주잔고\엣지파운드리_수주잔고(105550).md,outputs\.timeseries_cache\00766106.csv,2026-04-16 17:07:36
 00532129,영림원소프트랩,060850,success,,17,17,0,17,outputs\수주잔고\영림원소프트랩_수주잔고(060850).md,outputs\.timeseries_cache\00532129.csv,2026-04-16 17:07:36
-00569646,영우디에스피,143540,success,,17,17,0,17,outputs\수주잔고\영우디에스피_수주잔고(143540).md,outputs\.timeseries_cache\00569646.csv,2026-04-16 17:07:37
+00569646,영우디에스피,143540,success,,17,17,0,17,outputs\수주잔고\영우디에스피_수주잔고(143540).md,outputs\.timeseries_cache\00569646.csv,2026-04-16 21:51:22
 00141307,영풍,000670,success,,17,17,0,17,outputs\수주잔고\영풍_수주잔고(000670).md,outputs\.timeseries_cache\00141307.csv,2026-04-16 17:07:37
 01626391,오가노이드사이언스,476040,success,,3,3,0,3,outputs\수주잔고\오가노이드사이언스_수주잔고(476040).md,outputs\.timeseries_cache\01626391.csv,2026-04-16 17:07:37
 00220969,오공,045060,success,,17,17,0,17,outputs\수주잔고\오공_수주잔고(045060).md,outputs\.timeseries_cache\00220969.csv,2026-04-16 17:07:38

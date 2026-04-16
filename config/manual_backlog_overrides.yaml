@@ -44,3 +44,39 @@ overrides:
     report_name: "분기보고서 (2025.09)"
     amount_eok: 41.40
     reason: "공시 단위 공란 — 실제 단위 백만원"
+
+  - stock_code: "069460"
+    report_period: "2025.09"
+    report_name: "분기보고서 (2025.09)"
+    amount_eok: 110.28
+    reason: "보고서 단위 오류"
+
+  - stock_code: "069460"
+    report_period: "2025.03"
+    report_name: "분기보고서 (2025.03)"
+    amount_eok: 114.32
+    reason: "보고서 단위 오류"
+
+  - stock_code: "069460"
+    report_period: "2023.12"
+    report_name: "사업보고서 (2023.12)"
+    amount_eok: 94.35
+    reason: "보고서 단위 오류"
+
+  - stock_code: "069460"
+    report_period: "2022.12"
+    report_name: "[기재정정]사업보고서 (2022.12)"
+    amount_eok: 196.96
+    reason: "보고서 단위 오류"
+
+  - stock_code: "143540"
+    report_period: "2025.09"
+    report_name: "분기보고서 (2025.09)"
+    amount_eok: 518.03
+    reason: "보고서 단위 오류"
+
+  - stock_code: "115530"
+    report_period: "2025.06"
+    report_name: "반기보고서 (2025.06)"
+    amount_eok: 169.63
+    reason: "보고서 단위 오류"
