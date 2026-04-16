@@ -85,7 +85,7 @@ def main() -> None:
                     continue
                 matches.extend(extract_order_backlog_matches(filing, files))
 
-            total_df = build_total_summary(pd.DataFrame([match.__dict__ for match in matches]))
+            total_df = build_total_summary(pd.DataFrame([match.__dict__ for match in matches]), stock_code=company.stock_code)
             results.append((company, total_df))
             print(f"{company.corp_name}: filings={len(filings)}, matches={len(matches)}, totals={len(total_df)}")
         except Exception as error:

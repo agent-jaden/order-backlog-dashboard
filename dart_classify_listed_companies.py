@@ -218,7 +218,7 @@ def _classify_company(
             matches.extend(filing_matches)
 
     matches_df = pd.DataFrame([match.__dict__ for match in matches])
-    total_df = build_total_summary(matches_df)
+    total_df = build_total_summary(matches_df, stock_code=stock_code)
 
     latest_total_period = ""
     latest_total_eok: float | None = None

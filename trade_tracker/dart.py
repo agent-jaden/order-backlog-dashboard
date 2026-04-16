@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import json
 from html.parser import HTMLParser
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -208,6 +209,11 @@ class DartClient:
         start_date: str,
         end_date: str,
     ) -> list[DartFiling]:
+        cache_path = self._filings_cache_path(corp_code, start_date, end_date)
+        cached_filings = self._load_filings_cache(cache_path)
+        if cached_filings is not None:
+            return cached_filings
+
         filings: list[DartFiling] = []
         page_no = 1
 
@@ -258,6 +264,7 @@ class DartClient:
                 break
             page_no += 1
 
+        self._save_filings_cache(cache_path, filings)
         return filings
 
     def download_original_document(self, receipt_no: str) -> dict[str, str]:
@@ -387,6 +394,48 @@ class DartClient:
         )
         return self.cache_dir / "html" / node.receipt_no / file_name
 
+    def _filings_cache_path(self, corp_code: str, start_date: str, end_date: str) -> Path:
+        return self.cache_dir / "filings" / corp_code / f"{start_date}_{end_date}.json"
+
+    def _load_filings_cache(self, cache_path: Path) -> list[DartFiling] | None:
+        if not cache_path.exists():
+            return None
+
+        try:
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+
+        if not isinstance(payload, dict):
+            return None
+
+        raw_filings = payload.get("filings", [])
+        if not isinstance(raw_filings, list):
+            return None
+
+        filings: list[DartFiling] = []
+        for item in raw_filings:
+            if not isinstance(item, dict):
+                return None
+            filings.append(
+                DartFiling(
+                    corp_code=str(item.get("corp_code", "")).strip(),
+                    corp_name=str(item.get("corp_name", "")).strip(),
+                    stock_code=str(item.get("stock_code", "")).strip(),
+                    report_code=str(item.get("report_code", "")).strip(),
+                    report_label=str(item.get("report_label", "")).strip(),
+                    report_name=str(item.get("report_name", "")).strip(),
+                    receipt_no=str(item.get("receipt_no", "")).strip(),
+                    filing_date=str(item.get("filing_date", "")).strip(),
+                )
+            )
+        return filings
+
+    def _save_filings_cache(self, cache_path: Path, filings: list[DartFiling]) -> None:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"filings": [asdict(filing) for filing in filings]}
+        cache_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def extract_order_backlog_matches(filing: DartFiling, files: dict[str, str]) -> list[OrderBacklogMatch]:
     matches: list[OrderBacklogMatch] = []
@@ -515,25 +564,26 @@ def _fill_missing_units(matches: list[OrderBacklogMatch]) -> list[OrderBacklogMa
 
 
 def matches_to_markdown(company: DartCompany, matches: list[OrderBacklogMatch]) -> str:
-    lines = [f"# {company.corp_name} 수주잔고 리포트", ""]
+    backlog_label = _infer_backlog_label_from_company(company.stock_code)
+    lines = [f"# {company.corp_name} {backlog_label} 리포트", ""]
     lines.append(f"- 기업코드: `{company.corp_code}`")
     lines.append(f"- 종목코드: `{company.stock_code or '-'}`")
     lines.append(f"- 추출 건수: `{len(matches)}`")
     lines.append("")
 
     if not matches:
-        lines.append("수주잔고 관련 문구를 찾지 못했습니다.")
+        lines.append(f"{backlog_label} 관련 문구를 찾지 못했습니다.")
         return "\n".join(lines)
 
     df = pd.DataFrame([match.__dict__ for match in matches])
     df["amount_eok"] = df["amount_krw"].map(_to_eok_value)
     df["amount_display"] = df["amount_eok"].map(_format_eok)
-    total_df = build_total_summary(df)
+    total_df = build_total_summary(df, stock_code=company.stock_code)
 
     if not total_df.empty:
         lines.append("## 합계 요약")
         lines.append("")
-        lines.append("| 공시일 | 보고서 | 합계 수주잔고(억원) |")
+        lines.append(f"| 공시일 | 보고서 | 합계 {backlog_label}(억원) |")
         lines.append("| --- | --- | ---: |")
         for _, row in total_df.iterrows():
             lines.append(
@@ -581,7 +631,7 @@ def matches_to_markdown(company: DartCompany, matches: list[OrderBacklogMatch]) 
     return "\n".join(lines).rstrip() + "\n"
 
 
-def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
+def build_total_summary(df: pd.DataFrame, stock_code: str | None = None) -> pd.DataFrame:
     expected_columns = [
         "filing_date",
         "report_name",
@@ -603,6 +653,10 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
     if "amount_display" not in df.columns:
         df["amount_display"] = df["amount_eok"].map(_format_eok)
     df["source_priority"] = df["source_kind"].map(_source_priority)
+    if stock_code != "046940":
+        df = df.loc[~df["matched_text"].fillna("").str.contains("잔여기성", regex=False)].copy()
+    if stock_code != "094280":
+        df = df.loc[~df["matched_text"].fillna("").str.contains("수주총액", regex=False)].copy()
 
     matched_text = df["matched_text"].fillna("")
     total_terms = [
@@ -614,6 +668,10 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
         "총 수주잔고",
         "계약잔액",
     ]
+    if stock_code == "046940":
+        total_terms.append("잔여기성")
+    if stock_code == "094280":
+        total_terms.append("수주총액")
     total_mask = matched_text.map(lambda text: any(term in text for term in total_terms))
     total_df = df.loc[total_mask & df["amount_krw"].notna()].copy()
 
@@ -622,12 +680,26 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
         single_rows = row_counts.loc[row_counts["row_count"] == 1, ["filing_date", "report_name"]]
         total_df = df.merge(single_rows, on=["filing_date", "report_name"], how="inner")
         total_df = total_df.loc[total_df["source_priority"] <= 2].copy()
+        if stock_code != "046940":
+            total_df = total_df.loc[~total_df["matched_text"].fillna("").str.contains("잔여기성", regex=False)].copy()
+        if stock_code != "094280":
+            total_df = total_df.loc[~total_df["matched_text"].fillna("").str.contains("수주총액", regex=False)].copy()
         if total_df.empty:
-            return pd.DataFrame(columns=expected_columns)
+            total_df = _aggregate_business_segment_totals(df, total_terms, stock_code=stock_code)
+            if total_df.empty:
+                return pd.DataFrame(columns=expected_columns)
     else:
         table_backed = total_df.loc[total_df["source_priority"] <= 2].copy()
         if not table_backed.empty:
             total_df = table_backed
+
+    if stock_code != "046940":
+        total_df = total_df.loc[~total_df["matched_text"].fillna("").str.contains("잔여기성", regex=False)].copy()
+    if stock_code != "094280":
+        total_df = total_df.loc[~total_df["matched_text"].fillna("").str.contains("수주총액", regex=False)].copy()
+
+    if "source_priority" not in total_df.columns:
+        total_df["source_priority"] = total_df["source_kind"].map(_source_priority)
 
     conflict_columns = ["filing_date", "report_name", "source_file", "matched_text", "raw_value"]
     if all(column in total_df.columns for column in conflict_columns):
@@ -647,6 +719,103 @@ def build_total_summary(df: pd.DataFrame) -> pd.DataFrame:
     total_df["amount_display"] = total_df["amount_eok"].map(_format_eok)
     total_df["report_period"] = total_df["report_name"].map(_extract_report_period)
     return total_df[expected_columns]
+
+
+def _infer_backlog_label_from_company(stock_code: str | None) -> str:
+    if stock_code == "046940":
+        return "잔여기성"
+    if stock_code == "094280":
+        return "수주총액"
+    return "수주잔고"
+
+
+def _infer_backlog_label_from_df(df: pd.DataFrame, stock_code: str | None = None) -> str:
+    if stock_code == "046940":
+        return "잔여기성"
+    if stock_code == "094280":
+        return "수주총액"
+    if "matched_text" not in df.columns:
+        return "수주잔고"
+    texts = df["matched_text"].fillna("").astype(str).tolist()
+    if any("잔여기성" in text for text in texts) and not any("수주잔고" in text for text in texts):
+        return "잔여기성"
+    return "수주잔고"
+
+
+def _aggregate_business_segment_totals(
+    df: pd.DataFrame,
+    total_terms: list[str],
+    stock_code: str | None = None,
+) -> pd.DataFrame:
+    expected_columns = [
+        "filing_date",
+        "report_name",
+        "report_period",
+        "amount_display",
+        "amount_krw",
+        "amount_eok",
+        "raw_value",
+        "unit",
+        "matched_text",
+        "source_kind",
+    ]
+    required_columns = {"filing_date", "report_name", "amount_krw", "matched_text", "source_kind"}
+    if df.empty or not required_columns.issubset(df.columns):
+        return pd.DataFrame(columns=expected_columns)
+
+    candidate_df = df.copy()
+    candidate_df["matched_text"] = candidate_df["matched_text"].fillna("")
+    candidate_df["source_priority"] = candidate_df["source_kind"].map(_source_priority)
+    candidate_df["amount_krw"] = pd.to_numeric(candidate_df["amount_krw"], errors="coerce")
+    candidate_df = candidate_df.dropna(subset=["amount_krw"])
+    if candidate_df.empty:
+        return pd.DataFrame(columns=expected_columns)
+
+    backlog_terms = ("수주잔고", "수주잔액")
+    if stock_code == "046940":
+        backlog_terms = backlog_terms + ("잔여기성",)
+    if stock_code == "094280":
+        backlog_terms = backlog_terms + ("수주총액",)
+    backlog_label = _infer_backlog_label_from_df(df, stock_code=stock_code)
+    aggregated_rows: list[dict[str, object]] = []
+    for (filing_date, report_name), group in candidate_df.groupby(["filing_date", "report_name"], sort=False):
+        business_group = group.loc[group["source_priority"] <= 2].copy()
+        if business_group.empty:
+            continue
+        if not business_group["matched_text"].map(lambda text: any(term in text for term in backlog_terms)).all():
+            continue
+        if business_group["matched_text"].map(_is_negative_backlog_context_safe).any():
+            continue
+        non_empty_units = {str(unit) for unit in business_group["unit"].fillna("").astype(str) if str(unit).strip()}
+        if len(non_empty_units) > 1:
+            continue
+        if any(any(term in text for term in total_terms) for text in business_group["matched_text"]):
+            continue
+
+        total_amount = int(business_group["amount_krw"].sum())
+        representative = business_group.sort_values(
+            ["source_priority", "amount_krw", "matched_text"],
+            ascending=[True, False, False],
+        ).iloc[0]
+        aggregated_rows.append(
+            {
+                "filing_date": filing_date,
+                "report_name": report_name,
+                "report_period": _extract_report_period(str(report_name)),
+                "amount_display": _format_eok(_to_eok_value(total_amount)),
+                "amount_krw": total_amount,
+                "amount_eok": _to_eok_value(total_amount),
+                "raw_value": None,
+                "unit": representative.get("unit"),
+                "matched_text": f"사업부문별 {backlog_label} 합계",
+                "source_kind": "generic",
+            }
+        )
+
+    if not aggregated_rows:
+        return pd.DataFrame(columns=expected_columns)
+
+    return pd.DataFrame(aggregated_rows, columns=expected_columns)
 def batch_totals_to_markdown(results: list[tuple[DartCompany, pd.DataFrame]]) -> str:
     lines = ["# 기업별 수주잔고 합계 비교", ""]
     lines.append(f"- 대상 기업 수: `{len(results)}`")

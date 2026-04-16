@@ -1,5 +1,12 @@
 # TODO
 
+## DART cache validation
+
+- Verify tomorrow that the new `list_regular_filings()` cache layer works as intended.
+- Confirm that repeated company updates no longer re-run the DART disclosure list API for the same `corp_code` + date range.
+- Check that cached filing lists are reused from `outputs/.dart_cache/filings/`.
+- Re-run one or two companies after API access is available and confirm the saved `receipt_no` list matches the live API result.
+
 ## 수주잔고 이상치 점검
 
 - 현재 자동 점검표 생성 완료
