@@ -60,6 +60,10 @@ python dart_orders_timeseries.py --company 294630
 - 비교 전 **공백 제거** (`천 원` → `천원` 처리)
 - **주의**: `find` 대신 `rfind`를 쓰는 이유 — 매출실적 테이블의 단위와 수주현황 테이블의 단위가 공존할 때 수주현황(후반부) 단위를 우선해야 하기 때문
 
+### 단위 감지 우선순위 — `_infer_backlog_unit`
+- `table_context`(테이블 자체 HTML) → `local_context`(테이블 직전 3000자) 순으로 명시적 단위 탐색
+- **주의**: `table_context`를 먼저 확인하는 이유 — 테이블 자체의 `(단위: 천원)` TH 셀이 앞 섹션의 `(단위: 백만원)` 보다 더 권위 있음
+
 ### 합계 행 선택 — `build_total_summary`
 - `total_terms` 키워드 (`합계`, `수주잔고 금액`, `기말수주잔고` 등) 를 **공백 제거 후** 비교
 - `합 계` (공백 포함) 도 `합계`로 인식됨
@@ -70,12 +74,53 @@ python dart_orders_timeseries.py --company 294630
 - match_df를 `(filing_date, report_name)` 단위로 **groupby**해서 각 공시에 독립적으로 `build_total_summary` 호출
 - 이전 일괄 처리 방식에서는 다른 공시의 합계 행이 fallback 로직을 막는 문제가 있었음
 
+### 수주잔고 테이블 컬럼 인식 — `_find_backlog_columns`
+- `BACKLOG_HEADER_KEYWORDS`에 매칭되는 컬럼을 수주잔고 컬럼으로 인식
+- `수주일자` **또는 `수주일`** + `금액` 구조도 수주잔고 테이블로 인식 (CRO·연구용역 기업 등)
+- **주의**: 일부 기업(예: HLB바이오스텝)은 단위 선언 테이블과 데이터 테이블이 **별도 TABLE 태그**로 분리됨. 이 경우 단위는 데이터 테이블의 `prior_context`(직전 3000자)에서 감지됨
+
 ### 특수 기업 처리
 | stock_code | 처리 |
 |---|---|
 | `046940` | `잔여기성` 컬럼 사용 |
 | `094280` | `수주총액` 컬럼 사용 |
 | `011930` | 클린환경 / 재생에너지 사업부문 분리 (`_build_manual_segmented_series`) |
+
+## 수동 오버라이드 시스템 (`config/manual_backlog_overrides.yaml`)
+
+공시 자체의 단위 오기재 등으로 파싱 결과가 잘못될 때 값을 직접 고정합니다.
+
+```yaml
+overrides:
+  - stock_code: "044180"   # 종목코드 (6자리)
+    report_period: "2025.03"
+    report_name: "분기보고서 (2025.03)"  # 생략하면 report_period만 매칭
+    amount_eok: 434.0       # 수주잔고 (억원)
+    reason: "보고서 단위 오류"
+```
+
+오버라이드를 추가한 뒤 해당 기업의 timeseries 캐시 (`outputs/.timeseries_cache/<corp_code>.csv`) 와 manifest 상태를 초기화해야 다음 배치에서 재처리됩니다:
+
+```bash
+# manifest 상태 초기화
+python -c "
+import pandas as pd
+df = pd.read_csv('outputs/수주잔고/수주잔고_생성현황.csv', dtype=str)
+df.loc[df['stock_code'] == '044180', 'status'] = 'pending'
+df.to_csv('outputs/수주잔고/수주잔고_생성현황.csv', index=False, encoding='utf-8-sig')
+"
+# 캐시 삭제 후 배치 재실행
+rm outputs/.timeseries_cache/<corp_code>.csv
+python dart_orders_timeseries_batch.py --resume --html-request-interval 0.1
+```
+
+현재 오버라이드 기업:
+- 인팩(044180): 2025.03 / 2025.06 / 2025.09 — 보고서 단위 오류
+- 현대건설(000720): 2025.06 — 보고서 단위 오류
+- 일신바이오(068330): 2024.09 / 2025.09 — 공시 단위 공란 (실제 단위 백만원)
+- 대호에이엘(069460): 2022.12 / 2023.12 / 2025.03 / 2025.09 — 보고서 단위 오류
+- 영우디에스피(143540): 2025.09 — 보고서 단위 오류
+- 씨엔플러스(115530): 2025.06 — 보고서 단위 오류
 
 ## 배치 스크립트 주요 옵션
 
@@ -93,6 +138,7 @@ python dart_orders_timeseries.py --company 294630
 
 - 시알홀딩스·조선내화: 공시의 "수주총액" 컬럼이 잔고가 아닌 매출 개념이므로 제외
 - 디아이씨·대동기어: 수주잔고 없음 (원문 확인)
+- 한국공항: 수주잔고 없음
 
 ## 대시보드 GitHub Pages
 - URL: `https://agent-jaden.github.io/order-backlog-dashboard/`
@@ -103,3 +149,5 @@ python dart_orders_timeseries.py --company 294630
 - **값이 모두 `-`인 수주잔고 테이블**: 파서가 숫자를 추출하지 못해 해당 공시 제외 (정상 동작). 서남(294630) 2023.12~2024.06이 해당.
 - **수주잔고 테이블 없이 텍스트만 있는 공시**: 동일하게 제외. 사업보고서에서 "대규모 계약만 공시" 문구로 테이블 생략하는 경우.
 - **정정공시 중복**: 동일 기간에 정정공시가 여러 건이면 최신 공시(`filing_date` 기준 최후) 우선.
+- **단위 선언 테이블 분리 구조**: HLB바이오스텝(278650) 등 일부 기업은 `(단위: 천원)` 선언이 데이터 테이블과 별도 TABLE 태그에 있음. `_find_backlog_columns`에서 `수주일` + `금액` 패턴을 인식하여 처리.
+- **공시 단위 공란**: 일신바이오(068330) 일부 공시처럼 `(단위 : )` 형태로 단위가 비어 있는 경우 파서가 `원`으로 fallback → 수동 오버라이드로 처리.
