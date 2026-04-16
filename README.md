@@ -155,11 +155,17 @@ python dart_orders_dashboard.py
 python build_mkdocs_site.py
 ```
 
+대시보드 생성과 게시까지 한 번에 하려면:
+
+```bash
+python dart_orders_dashboard.py
+```
+
 즉 문서 갱신 순서는 아래처럼 유지하는 것이 안전합니다.
 
 1. `outputs/수주잔고`의 원본 문서를 생성하거나 갱신합니다.
 2. `python build_mkdocs_site.py`를 실행해 `docs/`를 다시 만듭니다.
-3. `docs/`, `mkdocs.yml`, `.github/workflows/deploy.yml`을 GitHub에 push 합니다.
+3. 필요하면 `python dart_orders_dashboard.py`로 원본 대시보드와 `docs/`를 함께 재생성하고 GitHub에 자동 반영합니다.
 
 ## GitHub Pages
 
@@ -174,10 +180,7 @@ MkDocs 기반으로 GitHub Pages에 게시합니다.
 배포 흐름:
 
 ```bash
-python build_mkdocs_site.py
-git add .
-git commit -m "Update published site"
-git push
+python dart_orders_dashboard.py
 ```
 
 GitHub 저장소에서 `Settings > Pages > Source`를 `GitHub Actions`로 설정하면 자동 배포됩니다.

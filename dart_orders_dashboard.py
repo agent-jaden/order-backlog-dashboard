@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pandas as pd
 
+import build_mkdocs_site
+
 
 QUARTER_SPECS = [
     ("2025.12", "사업보고서", "2025년 4분기"),
@@ -68,6 +70,18 @@ def main() -> None:
     output_md.parent.mkdir(parents=True, exist_ok=True)
     output_md.write_text("\n".join(lines), encoding="utf-8-sig")
     print(f"Dashboard saved to: {output_md}")
+
+    build_mkdocs_site.export_docs()
+    build_mkdocs_site.commit_and_push(
+        [
+            output_md,
+            build_mkdocs_site.DOCS_DIR / "index.md",
+            build_mkdocs_site.DOCS_DIR / "dashboard.md",
+            build_mkdocs_site.DOCS_DIR / "companies",
+        ],
+        commit_message="Refresh backlog dashboard",
+    )
+    print("Dashboard published to GitHub")
 
 
 def _build_quarter_section(

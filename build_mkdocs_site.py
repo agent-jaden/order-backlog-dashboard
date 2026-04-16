@@ -1,14 +1,22 @@
 ﻿from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
+from typing import Iterable
 
 
 ROOT = Path(__file__).resolve().parent
 OUTPUTS_DIR = ROOT / "outputs" / "수주잔고"
 DOCS_DIR = ROOT / "docs"
 COMPANIES_DIR = DOCS_DIR / "companies"
+
+
 def main() -> None:
+    export_docs()
+
+
+def export_docs() -> None:
     if not OUTPUTS_DIR.exists():
         raise SystemExit(f"Missing source directory: {OUTPUTS_DIR}")
 
@@ -18,6 +26,19 @@ def main() -> None:
     _export_company_pages()
     _write_companies_index()
     print(f"MkDocs docs exported to: {DOCS_DIR}")
+
+
+def commit_and_push(paths: Iterable[Path], commit_message: str, allow_empty: bool = True) -> None:
+    path_args = [str(path) for path in paths]
+    if not path_args:
+        return
+    _run_git(["add", "--", *path_args])
+    commit_args = ["commit"]
+    if allow_empty:
+        commit_args.append("--allow-empty")
+    commit_args.extend(["-m", commit_message])
+    _run_git(commit_args)
+    _run_git(["push", "origin", "main"])
 
 
 def _reset_docs_dir() -> None:
@@ -91,6 +112,10 @@ def _replace_local_company_links(text: str, prefix: str) -> str:
         text = text.replace(f"({source.name})", f"({relative_md})")
         text = text.replace(f"(./{source.name})", f"({relative_md})")
     return text
+
+
+def _run_git(args: list[str]) -> None:
+    subprocess.run(["git", *args], cwd=ROOT, check=True)
 
 
 if __name__ == "__main__":
