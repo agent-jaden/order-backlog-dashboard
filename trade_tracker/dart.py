@@ -1539,9 +1539,11 @@ def _find_backlog_columns(rows: list[list[str]]) -> list[int]:
 
     # Some companies disclose "주요 수주상황" with headers like
     # 품목 | 내용 | 수주일자(계약일자) | 금액 and a final 합계 row.
+    # Also matches tables with 수주일(납기) + 금액 columns (e.g. CRO companies using
+    # 품목 | 수주일 | 납기 | 금액 without a dedicated 수주잔고 column).
     # Treat the amount column as the backlog total candidate in this shape.
     full_header_text = _compact_text(" ".join(_column_header_text(header_rows, index) for index in range(len(header_rows[0]))))
-    has_major_order_shape = "수주일자" in full_header_text and "금액" in full_header_text
+    has_major_order_shape = ("수주일자" in full_header_text or "수주일" in full_header_text) and "금액" in full_header_text
     if not has_major_order_shape:
         return backlog_columns
 
