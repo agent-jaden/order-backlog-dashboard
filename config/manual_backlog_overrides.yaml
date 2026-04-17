@@ -80,3 +80,9 @@ overrides:
     report_name: "반기보고서 (2025.06)"
     amount_eok: 169.63
     reason: "보고서 단위 오류"
+
+  - stock_code: "457550"
+    report_period: "2024.12"
+    report_name: "사업보고서 (2024.12)"
+    amount_eok: 1625.70
+    reason: "보고서 단위 오류"
