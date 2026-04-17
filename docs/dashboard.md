@@ -67,8 +67,8 @@
 <tbody>
 <tr><td>1</td><td><a href="../companies/에스트래픽_수주잔고(234300)/">에스트래픽</a></td><td>1,396,180.9</td><td>0.00%</td><td>-23.65%</td></tr>
 <tr><td>2</td><td><a href="../companies/한화_수주잔고(000880)/">한화</a></td><td>1,388,605.95</td><td>11.41%</td><td>10.57%</td></tr>
-<tr><td>3</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>2.94%</td><td>-1.52%</td></tr>
-<tr><td>4</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>2.94%</td><td>129,945.51%</td></tr>
+<tr><td>3</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>822,368.8</td><td>2.94%</td><td>129,945.51%</td></tr>
+<tr><td>4</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>822,368.8</td><td>2.94%</td><td>-1.52%</td></tr>
 <tr><td>5</td><td><a href="../companies/현대건설_수주잔고(000720)/">현대건설</a></td><td>697,355.74</td><td>1.26%</td><td>14.50%</td></tr>
 <tr><td>6</td><td><a href="../companies/금양_수주잔고(001570)/">금양</a></td><td>579,000</td><td>0.00%</td><td>0.00%</td></tr>
 <tr><td>7</td><td><a href="../companies/HD현대중공업_수주잔고(329180)/">HD현대중공업</a></td><td>563,844.72</td><td>25.25%</td><td>20.14%</td></tr>
@@ -183,34 +183,33 @@
 <tr><td>56</td><td><a href="../companies/KTcs_수주잔고(058850)/">KTcs</a></td><td>4,133.09</td><td>3</td><td>9,297.66%</td><td>4,089.11</td></tr>
 <tr><td>57</td><td><a href="../companies/라온피플_수주잔고(300120)/">라온피플</a></td><td>3,161.53</td><td>3</td><td>4,015.50%</td><td>3,084.71</td></tr>
 <tr><td>58</td><td><a href="../companies/에너토크_수주잔고(019990)/">에너토크</a></td><td>196.34</td><td>3</td><td>632.07%</td><td>169.52</td></tr>
-<tr><td>59</td><td><a href="../companies/대덕_수주잔고(008060)/">대덕</a></td><td>2,168</td><td>3</td><td>507.28%</td><td>1,811</td></tr>
-<tr><td>60</td><td><a href="../companies/대덕전자_수주잔고(353200)/">대덕전자</a></td><td>2,168</td><td>3</td><td>507.28%</td><td>1,811</td></tr>
-<tr><td>61</td><td><a href="../companies/농심홀딩스_수주잔고(072710)/">농심홀딩스</a></td><td>2,594.44</td><td>3</td><td>492.09%</td><td>2,156.26</td></tr>
-<tr><td>62</td><td><a href="../companies/삼목에스폼_수주잔고(018310)/">삼목에스폼</a></td><td>540.82</td><td>3</td><td>471.45%</td><td>446.18</td></tr>
-<tr><td>63</td><td><a href="../companies/티움바이오_수주잔고(321550)/">티움바이오</a></td><td>205.77</td><td>3</td><td>364.85%</td><td>161.51</td></tr>
-<tr><td>64</td><td><a href="../companies/텔코웨어_수주잔고(078000)/">텔코웨어</a></td><td>228.53</td><td>3</td><td>261.35%</td><td>165.28</td></tr>
-<tr><td>65</td><td><a href="../companies/파나케이아_수주잔고(058530)/">파나케이아</a></td><td>107.06</td><td>3</td><td>257.74%</td><td>77.13</td></tr>
-<tr><td>66</td><td><a href="../companies/비트컴퓨터_수주잔고(032850)/">비트컴퓨터</a></td><td>84.18</td><td>3</td><td>197.38%</td><td>55.87</td></tr>
-<tr><td>67</td><td><a href="../companies/신성이엔지_수주잔고(011930)/">신성이엔지(재생에너지)</a></td><td>365.29</td><td>3</td><td>135.07%</td><td>209.89</td></tr>
-<tr><td>68</td><td><a href="../companies/심텍_수주잔고(222800)/">심텍</a></td><td>2,945.64</td><td>3</td><td>115.45%</td><td>1,578.43</td></tr>
-<tr><td>69</td><td><a href="../companies/심텍홀딩스_수주잔고(036710)/">심텍홀딩스</a></td><td>2,945.64</td><td>3</td><td>115.45%</td><td>1,578.43</td></tr>
-<tr><td>70</td><td><a href="../companies/현대힘스_수주잔고(460930)/">현대힘스</a></td><td>653.75</td><td>3</td><td>83.21%</td><td>296.91</td></tr>
-<tr><td>71</td><td><a href="../companies/CS_수주잔고(065770)/">CS</a></td><td>1.49</td><td>3</td><td>81.20%</td><td>0.67</td></tr>
-<tr><td>72</td><td><a href="../companies/HS화성_수주잔고(002460)/">HS화성</a></td><td>22,370.73</td><td>3</td><td>78.59%</td><td>9,844.71</td></tr>
-<tr><td>73</td><td><a href="../companies/코난테크놀로지_수주잔고(402030)/">코난테크놀로지</a></td><td>140.77</td><td>3</td><td>74.50%</td><td>60.1</td></tr>
-<tr><td>74</td><td><a href="../companies/팸텍_수주잔고(271830)/">팸텍</a></td><td>106.69</td><td>3</td><td>66.91%</td><td>42.77</td></tr>
-<tr><td>75</td><td><a href="../companies/에이직랜드_수주잔고(445090)/">에이직랜드</a></td><td>1,006.86</td><td>3</td><td>60.44%</td><td>379.29</td></tr>
-<tr><td>76</td><td><a href="../companies/삼호개발_수주잔고(010960)/">삼호개발</a></td><td>8,961.26</td><td>3</td><td>44.58%</td><td>2,763.26</td></tr>
-<tr><td>77</td><td><a href="../companies/에이치디씨영창_수주잔고(001890)/">에이치디씨영창</a></td><td>61.07</td><td>3</td><td>39.75%</td><td>17.37</td></tr>
-<tr><td>78</td><td><a href="../companies/한전KPS_수주잔고(051600)/">한전KPS</a></td><td>15,045.64</td><td>3</td><td>36.77%</td><td>4,044.56</td></tr>
-<tr><td>79</td><td><a href="../companies/LS_수주잔고(006260)/">LS</a></td><td>149,834</td><td>3</td><td>34.37%</td><td>38,322</td></tr>
-<tr><td>80</td><td><a href="../companies/STX엔진_수주잔고(077970)/">STX엔진</a></td><td>16,711</td><td>3</td><td>34.21%</td><td>4,260</td></tr>
-<tr><td>81</td><td><a href="../companies/에이치브이엠_수주잔고(295310)/">에이치브이엠</a></td><td>311.02</td><td>3</td><td>32.63%</td><td>76.52</td></tr>
-<tr><td>82</td><td><a href="../companies/바이오톡스텍_수주잔고(086040)/">바이오톡스텍</a></td><td>519.72</td><td>3</td><td>32.17%</td><td>126.51</td></tr>
-<tr><td>83</td><td><a href="../companies/퓨런티어_수주잔고(370090)/">퓨런티어</a></td><td>78.72</td><td>3</td><td>31.31%</td><td>18.77</td></tr>
-<tr><td>84</td><td><a href="../companies/LIG넥스원_수주잔고(079550)/">LIG넥스원</a></td><td>262,526</td><td>3</td><td>30.92%</td><td>61,995</td></tr>
-<tr><td>85</td><td><a href="../companies/다이나믹디자인_수주잔고(145210)/">다이나믹디자인</a></td><td>123.24</td><td>3</td><td>29.13%</td><td>27.8</td></tr>
-<tr><td>86</td><td><a href="../companies/빅텍_수주잔고(065450)/">빅텍</a></td><td>1,575</td><td>3</td><td>24.13%</td><td>306.2</td></tr>
+<tr><td>59</td><td><a href="../companies/대덕전자_수주잔고(353200)/">대덕전자</a></td><td>2,168</td><td>3</td><td>507.28%</td><td>1,811</td></tr>
+<tr><td>60</td><td><a href="../companies/농심홀딩스_수주잔고(072710)/">농심홀딩스</a></td><td>2,594.44</td><td>3</td><td>492.09%</td><td>2,156.26</td></tr>
+<tr><td>61</td><td><a href="../companies/삼목에스폼_수주잔고(018310)/">삼목에스폼</a></td><td>540.82</td><td>3</td><td>471.45%</td><td>446.18</td></tr>
+<tr><td>62</td><td><a href="../companies/티움바이오_수주잔고(321550)/">티움바이오</a></td><td>205.77</td><td>3</td><td>364.85%</td><td>161.51</td></tr>
+<tr><td>63</td><td><a href="../companies/텔코웨어_수주잔고(078000)/">텔코웨어</a></td><td>228.53</td><td>3</td><td>261.35%</td><td>165.28</td></tr>
+<tr><td>64</td><td><a href="../companies/파나케이아_수주잔고(058530)/">파나케이아</a></td><td>107.06</td><td>3</td><td>257.74%</td><td>77.13</td></tr>
+<tr><td>65</td><td><a href="../companies/비트컴퓨터_수주잔고(032850)/">비트컴퓨터</a></td><td>84.18</td><td>3</td><td>197.38%</td><td>55.87</td></tr>
+<tr><td>66</td><td><a href="../companies/신성이엔지_수주잔고(011930)/">신성이엔지(재생에너지)</a></td><td>365.29</td><td>3</td><td>135.07%</td><td>209.89</td></tr>
+<tr><td>67</td><td><a href="../companies/심텍_수주잔고(222800)/">심텍</a></td><td>2,945.64</td><td>3</td><td>115.45%</td><td>1,578.43</td></tr>
+<tr><td>68</td><td><a href="../companies/심텍홀딩스_수주잔고(036710)/">심텍홀딩스</a></td><td>2,945.64</td><td>3</td><td>115.45%</td><td>1,578.43</td></tr>
+<tr><td>69</td><td><a href="../companies/현대힘스_수주잔고(460930)/">현대힘스</a></td><td>653.75</td><td>3</td><td>83.21%</td><td>296.91</td></tr>
+<tr><td>70</td><td><a href="../companies/CS_수주잔고(065770)/">CS</a></td><td>1.49</td><td>3</td><td>81.20%</td><td>0.67</td></tr>
+<tr><td>71</td><td><a href="../companies/HS화성_수주잔고(002460)/">HS화성</a></td><td>22,370.73</td><td>3</td><td>78.59%</td><td>9,844.71</td></tr>
+<tr><td>72</td><td><a href="../companies/코난테크놀로지_수주잔고(402030)/">코난테크놀로지</a></td><td>140.77</td><td>3</td><td>74.50%</td><td>60.1</td></tr>
+<tr><td>73</td><td><a href="../companies/팸텍_수주잔고(271830)/">팸텍</a></td><td>106.69</td><td>3</td><td>66.91%</td><td>42.77</td></tr>
+<tr><td>74</td><td><a href="../companies/에이직랜드_수주잔고(445090)/">에이직랜드</a></td><td>1,006.86</td><td>3</td><td>60.44%</td><td>379.29</td></tr>
+<tr><td>75</td><td><a href="../companies/삼호개발_수주잔고(010960)/">삼호개발</a></td><td>8,961.26</td><td>3</td><td>44.58%</td><td>2,763.26</td></tr>
+<tr><td>76</td><td><a href="../companies/에이치디씨영창_수주잔고(001890)/">에이치디씨영창</a></td><td>61.07</td><td>3</td><td>39.75%</td><td>17.37</td></tr>
+<tr><td>77</td><td><a href="../companies/한전KPS_수주잔고(051600)/">한전KPS</a></td><td>15,045.64</td><td>3</td><td>36.77%</td><td>4,044.56</td></tr>
+<tr><td>78</td><td><a href="../companies/LS_수주잔고(006260)/">LS</a></td><td>149,834</td><td>3</td><td>34.37%</td><td>38,322</td></tr>
+<tr><td>79</td><td><a href="../companies/STX엔진_수주잔고(077970)/">STX엔진</a></td><td>16,711</td><td>3</td><td>34.21%</td><td>4,260</td></tr>
+<tr><td>80</td><td><a href="../companies/에이치브이엠_수주잔고(295310)/">에이치브이엠</a></td><td>311.02</td><td>3</td><td>32.63%</td><td>76.52</td></tr>
+<tr><td>81</td><td><a href="../companies/바이오톡스텍_수주잔고(086040)/">바이오톡스텍</a></td><td>519.72</td><td>3</td><td>32.17%</td><td>126.51</td></tr>
+<tr><td>82</td><td><a href="../companies/퓨런티어_수주잔고(370090)/">퓨런티어</a></td><td>78.72</td><td>3</td><td>31.31%</td><td>18.77</td></tr>
+<tr><td>83</td><td><a href="../companies/LIG넥스원_수주잔고(079550)/">LIG넥스원</a></td><td>262,526</td><td>3</td><td>30.92%</td><td>61,995</td></tr>
+<tr><td>84</td><td><a href="../companies/다이나믹디자인_수주잔고(145210)/">다이나믹디자인</a></td><td>123.24</td><td>3</td><td>29.13%</td><td>27.8</td></tr>
+<tr><td>85</td><td><a href="../companies/빅텍_수주잔고(065450)/">빅텍</a></td><td>1,575</td><td>3</td><td>24.13%</td><td>306.2</td></tr>
 </tbody>
 </table>
 
@@ -449,14 +448,13 @@
 <tr><td>2</td><td><a href="../companies/제주반도체_수주잔고(080220)/">제주반도체</a></td><td>1,131.11</td><td>4</td><td>38.00%</td><td>311.47</td></tr>
 <tr><td>3</td><td><a href="../companies/에너토크_수주잔고(019990)/">에너토크</a></td><td>164.1</td><td>3</td><td>160.52%</td><td>101.11</td></tr>
 <tr><td>4</td><td><a href="../companies/엑시콘_수주잔고(092870)/">엑시콘</a></td><td>292.15</td><td>3</td><td>150.69%</td><td>175.61</td></tr>
-<tr><td>5</td><td><a href="../companies/대덕_수주잔고(008060)/">대덕</a></td><td>3,110</td><td>3</td><td>142.40%</td><td>1,827</td></tr>
-<tr><td>6</td><td><a href="../companies/대덕전자_수주잔고(353200)/">대덕전자</a></td><td>3,110</td><td>3</td><td>142.40%</td><td>1,827</td></tr>
-<tr><td>7</td><td><a href="../companies/CS_수주잔고(065770)/">CS</a></td><td>42</td><td>3</td><td>100.55%</td><td>21.06</td></tr>
-<tr><td>8</td><td><a href="../companies/티움바이오_수주잔고(321550)/">티움바이오</a></td><td>230.35</td><td>3</td><td>53.67%</td><td>80.45</td></tr>
-<tr><td>9</td><td><a href="../companies/제이티_수주잔고(089790)/">제이티</a></td><td>168.35</td><td>3</td><td>42.85%</td><td>50.5</td></tr>
-<tr><td>10</td><td><a href="../companies/기산텔레콤_수주잔고(035460)/">기산텔레콤</a></td><td>178.5</td><td>3</td><td>39.67%</td><td>50.7</td></tr>
-<tr><td>11</td><td><a href="../companies/위세아이텍_수주잔고(065370)/">위세아이텍</a></td><td>225.34</td><td>3</td><td>37.69%</td><td>61.69</td></tr>
-<tr><td>12</td><td><a href="../companies/엑시큐어하이트론_수주잔고(019490)/">엑시큐어하이트론</a></td><td>52.85</td><td>3</td><td>21.89%</td><td>9.49</td></tr>
+<tr><td>5</td><td><a href="../companies/대덕전자_수주잔고(353200)/">대덕전자</a></td><td>3,110</td><td>3</td><td>142.40%</td><td>1,827</td></tr>
+<tr><td>6</td><td><a href="../companies/CS_수주잔고(065770)/">CS</a></td><td>42</td><td>3</td><td>100.55%</td><td>21.06</td></tr>
+<tr><td>7</td><td><a href="../companies/티움바이오_수주잔고(321550)/">티움바이오</a></td><td>230.35</td><td>3</td><td>53.67%</td><td>80.45</td></tr>
+<tr><td>8</td><td><a href="../companies/제이티_수주잔고(089790)/">제이티</a></td><td>168.35</td><td>3</td><td>42.85%</td><td>50.5</td></tr>
+<tr><td>9</td><td><a href="../companies/기산텔레콤_수주잔고(035460)/">기산텔레콤</a></td><td>178.5</td><td>3</td><td>39.67%</td><td>50.7</td></tr>
+<tr><td>10</td><td><a href="../companies/위세아이텍_수주잔고(065370)/">위세아이텍</a></td><td>225.34</td><td>3</td><td>37.69%</td><td>61.69</td></tr>
+<tr><td>11</td><td><a href="../companies/엑시큐어하이트론_수주잔고(019490)/">엑시큐어하이트론</a></td><td>52.85</td><td>3</td><td>21.89%</td><td>9.49</td></tr>
 </tbody>
 </table>
 
@@ -525,8 +523,8 @@
 <tr><td>1</td><td><a href="../companies/에스트래픽_수주잔고(234300)/">에스트래픽</a></td><td>1,396,180.9</td><td>-0.84%</td><td>73,400.23%</td></tr>
 <tr><td>2</td><td><a href="../companies/한화_수주잔고(000880)/">한화</a></td><td>1,221,964.81</td><td>-2.82%</td><td>34.81%</td></tr>
 <tr><td>3</td><td><a href="../companies/한화에어로스페이스_수주잔고(012450)/">한화에어로스페이스</a></td><td>1,016,517.53</td><td>-2.33%</td><td>50.08%</td></tr>
-<tr><td>4</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>814,424.77</td><td>185,101.77%</td><td>38,285.66%</td></tr>
-<tr><td>5</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>814,424.77</td><td>-3.10%</td><td>3.73%</td></tr>
+<tr><td>4</td><td><a href="../companies/HD한국조선해양_수주잔고(009540)/">HD한국조선해양</a></td><td>814,424.77</td><td>-3.10%</td><td>3.73%</td></tr>
+<tr><td>5</td><td><a href="../companies/HD현대_수주잔고(267250)/">HD현대</a></td><td>814,424.77</td><td>185,101.77%</td><td>38,285.66%</td></tr>
 <tr><td>6</td><td><a href="../companies/금양_수주잔고(001570)/">금양</a></td><td>579,000</td><td>0.00%</td><td>-</td></tr>
 <tr><td>7</td><td><a href="../companies/HD현대중공업_수주잔고(329180)/">HD현대중공업</a></td><td>463,442.47</td><td>-6.63%</td><td>0.03%</td></tr>
 <tr><td>8</td><td><a href="../companies/대우건설_수주잔고(047040)/">대우건설</a></td><td>449,933.03</td><td>-0.04%</td><td>0.01%</td></tr>
