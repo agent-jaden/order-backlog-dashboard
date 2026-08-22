@@ -961,7 +961,16 @@ def _extract_from_tables(content: str) -> list[OrderBacklogMatch]:
         if not tables:
             continue
         table = tables[0]
+        header_rows: list[list[str]] = []
+        is_default_columns = list(table.columns) == list(range(len(table.columns)))
+        if isinstance(table.columns, pd.MultiIndex):
+            for level in range(table.columns.nlevels):
+                header_rows.append([_compact_text(str(value)) for value in table.columns.get_level_values(level)])
+        elif not is_default_columns:
+            header_rows.append([_compact_text(str(value)) for value in table.columns])
         normalized_rows = table.fillna("").astype(str).apply(lambda column: column.map(_compact_text)).values.tolist()
+        if header_rows:
+            normalized_rows = header_rows + normalized_rows
         if not normalized_rows:
             continue
         context_start = max(table_match.start() - 3000, 0)

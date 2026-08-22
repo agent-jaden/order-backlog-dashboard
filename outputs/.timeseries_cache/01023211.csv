@@ -1,2 +1,4 @@
 ﻿corp_code,corp_name,stock_code,filing_date,report_name,report_period,amount_display,change_display,change_pct_display,yoy_change_display,yoy_change_pct_display,amount_eok,change_eok,change_pct,yoy_change_eok,yoy_change_pct
 01023211,와이제이링크,209640,20260319,사업보고서 (2025.12),2025.12,0,-,-,-,-,2.026e-05,,,,
+01023211,와이제이링크,209640,20260514,분기보고서 (2026.03),2026.03,41.4,+41.4,"+204,343,434.06%",-,-,41.4,41.39997974,204343434.0572557,,
+01023211,와이제이링크,209640,20260814,반기보고서 (2026.06),2026.06,41.4,0,0.00%,-,-,41.4,0.0,0.0,,
