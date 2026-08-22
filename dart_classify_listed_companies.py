@@ -405,6 +405,12 @@ def _normalize_stock_code(value: object) -> str | None:
     text = str(value).strip()
     if not text:
         return None
+    if len(text) == STOCK_CODE_WIDTH and text.isalnum():
+        # DART assigns alphanumeric placeholder codes (e.g. "0010F0") to some
+        # unlisted/special entities. Stripping non-digit characters here used
+        # to collapse these into a real company's numeric ticker (e.g. "000100"),
+        # so preserve already-correct-width codes as-is.
+        return text.upper()
     digits = "".join(ch for ch in text if ch.isdigit())
     if not digits:
         return text
