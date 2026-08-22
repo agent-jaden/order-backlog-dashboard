@@ -10,6 +10,8 @@ import build_mkdocs_site
 
 
 QUARTER_SPECS = [
+    ("2026.06", "반기보고서", "2026년 2분기"),
+    ("2026.03", "분기보고서", "2026년 1분기"),
     ("2025.12", "사업보고서", "2025년 4분기"),
     ("2025.09", "분기보고서", "2025년 3분기"),
     ("2025.06", "반기보고서", "2025년 2분기"),
@@ -43,11 +45,13 @@ def main() -> None:
     for column in ["amount_eok", "change_eok", "change_pct", "yoy_change_eok", "yoy_change_pct"]:
         df[column] = pd.to_numeric(df[column], errors="coerce")
 
+    range_start = QUARTER_SPECS[-1][2]
+    range_end = QUARTER_SPECS[0][2]
     lines = [
         "# 수주잔고 대시보드",
         "",
         f"- 기준 데이터: `{input_csv.as_posix()}`",
-        "- 기준 범위: `2025년 1분기 ~ 2025년 4분기`",
+        f"- 기준 범위: `{range_start} ~ {range_end}`",
         "- 기업명 링크: 각 기업별 수주잔고 MD 문서로 연결",
         "- 주의: 자동 추출 결과이므로 극단값은 개별 기업 문서를 함께 확인하는 편이 안전합니다.",
         "",

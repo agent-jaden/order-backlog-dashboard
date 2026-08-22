@@ -143,7 +143,7 @@ python dart_orders_timeseries_batch.py --resume --html-request-interval 0.1
 ## 대시보드 GitHub Pages
 - URL: `https://agent-jaden.github.io/order-backlog-dashboard/`
 - `dart_orders_dashboard.py` 실행 시 자동으로 `git commit + push`
-- 표시 분기: 2025.12 / 2025.09 / 2025.06 / 2025.03
+- 표시 분기: 2026.06 / 2026.03 / 2025.12 / 2025.09 / 2025.06 / 2025.03 (`dart_orders_dashboard.py`의 `QUARTER_SPECS`)
 
 ## 알려진 엣지 케이스
 - **값이 모두 `-`인 수주잔고 테이블**: 파서가 숫자를 추출하지 못해 해당 공시 제외 (정상 동작). 서남(294630) 2023.12~2024.06이 해당.
